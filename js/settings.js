@@ -69,6 +69,9 @@ App.modules.settings = (function () {
     dataCard.append(el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [bExp, bImp, bClear]), fileI);
     view.appendChild(dataCard);
 
+    // 云同步
+    await renderSyncCard(view);
+
     // 关于
     const about = el("div", { class: "card muted tiny" }, [
       el("strong", {}, "关于 · 智学"), el("br"),
@@ -76,6 +79,59 @@ App.modules.settings = (function () {
       "支持学习追踪、灵感记录（文字/语音/图片）、AI 总结与关联、周月数据看板。",
     ]);
     view.appendChild(about);
+  };
+
+  // 云同步配置
+  const renderSyncCard = async (view) => {
+    const s = await App.sync.getState();
+    const last = await App.sync.getLastSync();
+    const card = el("div", { class: "card" });
+    card.appendChild(el("strong", {}, "☁️ 云同步（跨设备）"));
+    card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
+      "数据存于你的私有 GitHub 仓库，手机记录、电脑整理，自动互通。需一个具备 repo 权限的 GitHub Token（建议用「细粒度 Token」仅授权 ai-learn-hub-data 仓库，更安全）。"));
+
+    const enChk = el("input", { type: "checkbox", checked: s.enabled ? "checked" : null });
+    const autoChk = el("input", { type: "checkbox", checked: s.auto ? "checked" : null });
+    const tokenI = el("input", { class: "input", type: "password", value: s.token || "", placeholder: "ghp_... 或 github_pat_..." });
+    const repoI = el("input", { class: "input", value: s.repo || "Sharkepler/ai-learn-hub-data", placeholder: "owner/repo" });
+    const branchI = el("input", { class: "input", value: s.branch || "main", placeholder: "main" });
+    const statusLine = el("div", { class: "muted tiny", id: "syncStatusLine" },
+      last ? "上次同步：" + App.util.fmtDateTime(last) : "尚未同步");
+
+    const save = el("button", { class: "btn", style: "margin-right:8px" }, "保存并启用");
+    save.onclick = async () => {
+      await App.sync.saveCfg({
+        enabled: enChk.checked, token: tokenI.value.trim(),
+        repo: repoI.value.trim() || "Sharkepler/ai-learn-hub-data",
+        branch: branchI.value.trim() || "main", auto: autoChk.checked,
+      });
+      toast("云同步配置已保存");
+      const r = await App.sync.syncNow({ refresh: true });
+      if (r && r.ok) { toast("已同步 ✅"); statusLine.textContent = "上次同步：" + App.util.fmtDateTime(Date.now()); }
+      else if (r && r.skipped) toast("未配置或未完成");
+      else if (r && !r.ok) toast("首次同步失败：" + (r.error || "").slice(0, 40));
+      App.app.show("settings");
+    };
+    const now = el("button", { class: "btn ghost" }, "立即同步");
+    now.onclick = async () => {
+      now.disabled = true; now.textContent = "同步中…";
+      const r = await App.sync.syncNow({ refresh: true });
+      now.disabled = false; now.textContent = "立即同步";
+      if (r && r.ok) { toast("已同步 ✅"); statusLine.textContent = "上次同步：" + App.util.fmtDateTime(Date.now()); }
+      else if (r && r.skipped) toast("请先保存配置");
+      else if (r && !r.ok) toast("同步失败：" + (r.error || "").slice(0, 40));
+    };
+
+    card.append(
+      el("label", { class: "row", style: "gap:8px;margin-bottom:8px" }, [enChk, el("span", {}, "启用云同步")]),
+      field("GitHub Token（仅存本机）", tokenI),
+      field("数据仓库（私有）", repoI),
+      field("分支", branchI),
+      el("label", { class: "row", style: "gap:8px;margin:8px 0" }, [autoChk, el("span", {}, "自动同步（本地改动后自动上传）")]),
+      el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [save, now]),
+      statusLine,
+    );
+    view.appendChild(card);
   };
 
   const field = (label, node) => el("div", { class: "field" }, [el("label", {}, label), node]);

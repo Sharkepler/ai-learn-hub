@@ -18,6 +18,18 @@ App.app = (function () {
     if (modules[tab]) modules[tab]();
   };
 
+  // 手动触发云同步
+  const doSync = async () => {
+    const btn = document.getElementById("syncBtn");
+    if (btn) btn.disabled = true;
+    const r = await App.sync.syncNow({ refresh: true });
+    if (btn) btn.disabled = false;
+    if (r && r.skipped) { if (r.reason === "not-configured") { toast("未配置云同步，去设置开启"); App.app.openSettings(); } }
+    else if (r && r.ok) toast("已同步 ✅");
+    else if (r && !r.ok) toast("同步失败：" + (r.error || "").slice(0, 40));
+    App.app.show(current);
+  };
+
   const openSettings = () => show("settings");
 
   // FAB：按当前页决定动作
@@ -39,8 +51,8 @@ App.app = (function () {
       const q = input.value.trim().toLowerCase();
       if (!q) { results.innerHTML = ""; return; }
       const [ls, ins] = await Promise.all([App.db.getAll("learnings"), App.db.getAll("inspirations")]);
-      const hitL = ls.filter((x) => (x.title + x.content + (x.tags || []).join(" ")).toLowerCase().includes(q));
-      const hitI = ins.filter((x) => (x.text + (x.tags || []).join(" ")).toLowerCase().includes(q));
+      const hitL = ls.filter((x) => !x.deleted && (x.title + x.content + (x.tags || []).join(" ")).toLowerCase().includes(q));
+      const hitI = ins.filter((x) => !x.deleted && (x.text + (x.tags || []).join(" ")).toLowerCase().includes(q));
       results.innerHTML = "";
       if (!hitL.length && !hitI.length) { results.appendChild(el("div", { class: "empty" }, "无匹配结果")); return; }
       results.appendChild(el("div", { class: "muted tiny", style: "margin-bottom:8px" }, `学习 ${hitL.length} 条 · 灵感 ${hitI.length} 条`));
@@ -64,6 +76,7 @@ App.app = (function () {
     document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => show(t.dataset.tab)));
     document.getElementById("fab").onclick = fabAction;
     document.getElementById("btnSettings").onclick = openSettings;
+    document.getElementById("syncBtn").onclick = doSync;
     // 关闭层
     document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => {
       document.getElementById("modal").hidden = true;
@@ -71,9 +84,11 @@ App.app = (function () {
     }));
     initSearch();
     show("learning");
+    // 云同步：进入即拉取一次（若已配置）
+    App.sync.init();
   };
 
-  return { init, show, openSettings };
+  return { init, show, openSettings, get current() { return current; } };
 })();
 
 document.addEventListener("DOMContentLoaded", App.app.init);

@@ -7,7 +7,7 @@ App.modules.learning = (function () {
   let filterTopic = "全部";
 
   const render = async (view) => {
-    const all = await App.db.getAll("learnings");
+    const all = (await App.db.getAll("learnings")).filter((x) => !x.deleted);
     all.sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
 
     view.innerHTML = "";
@@ -95,7 +95,7 @@ App.modules.learning = (function () {
     const bEdit = el("button", { class: "text-btn" }, "编辑");
     bEdit.onclick = () => openForm(item, view);
     const bDel = el("button", { class: "text-btn", style: "color:var(--danger)" }, "删除");
-    bDel.onclick = async () => { await App.db.del("learnings", item.id); toast("已删除"); render(view); };
+    bDel.onclick = async () => { await App.db.markDeleted("learnings", item.id); toast("已删除"); render(view); };
     actions.append(bSum, bEdit, bDel);
     card.appendChild(actions);
     return card;

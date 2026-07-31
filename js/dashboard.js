@@ -8,6 +8,8 @@ App.modules.dashboard = (function () {
     const [learnings, inspirations] = await Promise.all([
       App.db.getAll("learnings"), App.db.getAll("inspirations"),
     ]);
+    const L = learnings.filter((x) => !x.deleted);
+    const I = inspirations.filter((x) => !x.deleted);
     view.innerHTML = "";
     view.appendChild(el("h2", { class: "section" }, "📊 数据看板"));
 
@@ -18,7 +20,7 @@ App.modules.dashboard = (function () {
     view.appendChild(seg);
 
     // 统计卡
-    const stats = computeStats(learnings, inspirations, range);
+    const stats = computeStats(L, I, range);
     view.appendChild(el("div", { class: "stat-grid" }, [
       stat(fmtDur(stats.totalMin), range === "week" ? "本周学习时长" : "本月学习时长"),
       stat(stats.learnCount, range === "week" ? "本周学习记录" : "本月学习记录"),

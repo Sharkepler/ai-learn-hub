@@ -7,7 +7,7 @@ App.modules.inspiration = (function () {
   let allItems = [];
 
   const render = async (view) => {
-    allItems = await App.db.getAll("inspirations");
+    allItems = (await App.db.getAll("inspirations")).filter((x) => !x.deleted);
     allItems.sort((a, b) => b.createdAt - a.createdAt);
 
     view.innerHTML = "";
@@ -136,7 +136,7 @@ App.modules.inspiration = (function () {
     const bEdit = el("button", { class: "text-btn" }, "编辑");
     bEdit.onclick = () => openForm(it, view);
     const bDel = el("button", { class: "text-btn", style: "color:var(--danger)" }, "删除");
-    bDel.onclick = async () => { await App.db.del("inspirations", it.id); toast("已删除"); render(view); };
+    bDel.onclick = async () => { await App.db.markDeleted("inspirations", it.id); toast("已删除"); render(view); };
     actions.append(bEdit, bDel);
     card.appendChild(actions);
     return card;

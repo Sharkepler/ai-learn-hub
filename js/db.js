@@ -34,11 +34,42 @@ App.db = (function () {
     r.onerror = () => rej(r.error);
   });
 
+  let _suppressSync = false;
   const put = (store, obj) => new Promise((res, rej) => {
+    // 数据记录自动打时间戳（用于跨设备同步合并）
+    if (store === "learnings" || store === "inspirations") {
+      obj.updatedAt = Date.now();
+      if (!obj.createdAt) obj.createdAt = obj.updatedAt;
+      if (!_suppressSync && App.sync && App.sync.schedulePush) App.sync.schedulePush();
+    }
     const r = tx(store, "readwrite").put(obj);
     r.onsuccess = () => res(obj);
     r.onerror = () => rej(r.error);
   });
+
+  // 批量写入（用于同步落地，抑制自动同步循环）
+  const bulkPut = async (store, arr) => {
+    _suppressSync = true;
+    try {
+      for (const o of (arr || [])) {
+        if ((store === "learnings" || store === "inspirations") && !o.updatedAt)
+          o.updatedAt = o.createdAt || Date.now();
+        await put(store, o);
+      }
+    } finally { _suppressSync = false; }
+  };
+
+  // 软删除：标记 deleted，便于跨设备同步删除
+  const markDeleted = async (store, id) => {
+    const rec = await get(store, id);
+    if (!rec) return;
+    rec.deleted = true; rec.updatedAt = Date.now();
+    await put(store, rec);
+  };
+
+  // 同步元数据
+  const getMeta = (k, def) => getSetting("__meta_" + k, def);
+  const setMeta = (k, v) => setSetting("__meta_" + k, v);
 
   const del = (store, id) => new Promise((res, rej) => {
     const r = tx(store, "readwrite").delete(id);
@@ -110,5 +141,6 @@ App.db = (function () {
     res(new Blob([arr], { type: mime }));
   });
 
-  return { open, getAll, get, put, del, clear, getSetting, setSetting, exportAll, importAll };
+  return { open, getAll, get, put, bulkPut, markDeleted, del, clear, getSetting, setSetting,
+    getMeta, setMeta, exportAll, importAll };
 })();
