@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TopBar from "./TopBar";
 import BottomNav, { type View } from "./BottomNav";
@@ -7,8 +7,9 @@ import Inspiration from "../views/Inspiration";
 import Dashboard from "../views/Dashboard";
 import Settings from "../views/Settings";
 import { useStore, syncNow } from "../state/store";
-import { applyTheme } from "../lib/theme";
-import { isDarkNow } from "../lib/theme";
+import { applyTheme, isDarkNow } from "../lib/theme";
+import { getToken } from "../lib/auth";
+import { getCfg, pullAll } from "../lib/sync";
 import type { GithubUser } from "../lib/types";
 import { useToast } from "./Toast";
 
@@ -32,6 +33,19 @@ export default function AppShell({
   const { lastSync, reload } = useStore();
   const toast = useToast();
 
+  // 进入后若已启用同步，先拉取云端全部数据（解决新设备/清空本地后看不到线上数据）
+  useEffect(() => {
+    if (getCfg().enabled && getToken()) {
+      setSyncing(true);
+      pullAll()
+        .then(() => reload())
+        .catch(() => {})
+        .finally(() => setSyncing(false));
+    }
+    // 仅在挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function toggleTheme() {
     const next = isDarkNow() ? "light" : "dark";
     applyTheme(next);
@@ -43,7 +57,7 @@ export default function AppShell({
     const r = await syncNow();
     setSyncing(false);
     if (r.ok) {
-      toast(`已同步 ${r.pushed} 天 ✅`, "ok");
+      toast(`已同步（拉取 ${r.pulled} 条 / 上传 ${r.pushed} 天）✅`, "ok");
       reload();
     } else {
       toast(r.error || "同步失败", "err");

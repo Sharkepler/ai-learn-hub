@@ -145,6 +145,40 @@ export async function pushDay(day: string, token?: string): Promise<boolean> {
   throw new Error("同步冲突重试次数过多");
 }
 
+// List all day-files in the remote data/ directory.
+async function listDataDays(token: string, cfg: SyncConfig): Promise<string[]> {
+  const path = `/repos/${cfg.repo}/contents/data?ref=${cfg.branch}`;
+  try {
+    const res = await gh(path, token);
+    if (res.status === 404) return [];
+    const arr = await res.json();
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((f: any) => typeof f.name === "string" && f.name.endsWith(".json"))
+      .map((f: any) => f.name.replace(/\.json$/, ""));
+  } catch {
+    return [];
+  }
+}
+
+// Pull every remote day into the local DB (first load / new device).
+export async function pullAll(token?: string): Promise<number> {
+  const tk = token || getToken();
+  const cfg = getCfg();
+  if (!tk || !cfg.enabled) return 0;
+  const days = await listDataDays(tk, cfg);
+  let n = 0;
+  for (const d of days) {
+    const { items } = await getDayFile(d, tk, cfg);
+    if (items.length) {
+      await bulkPut(items);
+      n += items.length;
+    }
+  }
+  await setMeta(LAST_KEY, Date.now());
+  return n;
+}
+
 // Pull a day's remote items into local DB (for day-filter search).
 export async function pullDayInto(day: string, token?: string): Promise<number> {
   const tk = token || getToken();
@@ -156,28 +190,29 @@ export async function pullDayInto(day: string, token?: string): Promise<number> 
   return items.length;
 }
 
-// Push every local day once.
+// Two-way sync: pull remote first, then push local.
 export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
   ok: boolean;
+  pulled: number;
   pushed: number;
   error?: string;
 }> {
   const tk = getToken();
   const cfg = getCfg();
   if (!tk || !cfg.enabled)
-    return { ok: false, pushed: 0, error: "未启用或未登录" };
+    return { ok: false, pulled: 0, pushed: 0, error: "未启用或未登录" };
   try {
+    const pulled = await pullAll(tk);
     const all = await getAllItems();
     const days = Array.from(new Set(all.map((i) => i.day))).sort().reverse();
     let pushed = 0;
     for (const d of days) {
-      const ok = await pushDay(d, tk);
-      if (ok) pushed++;
+      if (await pushDay(d, tk)) pushed++;
     }
     await setMeta(LAST_KEY, Date.now());
-    return { ok: true, pushed };
+    return { ok: true, pulled, pushed };
   } catch (e: any) {
-    return { ok: false, pushed: 0, error: e?.message || "同步失败" };
+    return { ok: false, pulled: 0, pushed: 0, error: e?.message || "同步失败" };
   }
 }
 

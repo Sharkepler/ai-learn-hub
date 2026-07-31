@@ -42,13 +42,11 @@ export default function LoginGate({
         className="w-full max-w-sm"
       >
         <div className="mb-7 text-center">
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-accent text-white shadow-lg shadow-accent/25">
-            <span className="text-2xl font-bold">智</span>
+          <div className="seal-mark mx-auto mb-4">
+            <span>智</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">智学</h1>
-          <p className="mt-1.5 text-sm text-text-2">
-            个人 AI 学习与灵感空间
-          </p>
+          <p className="mt-1.5 text-sm text-text-2">个人 AI 学习与灵感空间</p>
         </div>
 
         <form
@@ -74,7 +72,7 @@ export default function LoginGate({
               type="checkbox"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className="h-4 w-4 accent-accent"
+              className="h-4 w-4 accent-akcent"
             />
             记住登录（本机）
           </label>

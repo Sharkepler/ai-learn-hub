@@ -1,41 +1,51 @@
 @import "tailwindcss";
 
-/* Taste-skill: dark mode via class toggle (manual + system pref) */
+/* taste-skill: dark mode via class toggle (manual + system pref) */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  Design tokens. One accent, locked across the whole app (Color Consistency Lock).
-  One radius scale (Shape Consistency Lock): cards 16px, inputs 12px, pills full.
-  No AI-purple glow; calm jade accent on neutral zinc/stone bases.
+  智学 · 中国风素朴 redesign
+  - 配色：宣纸底 / 水墨字 / 朱砂印（单一强调色，跨模块一致）
+  - 字体：标题用宋体（Noto Serif SC，系统宋体兜底），正文用思源黑体
+  - 形状：卡片 14px、输入框 10px、胶囊全圆（形状一致性锁）
+  - 质感：极淡宣纸纹理底纹，留白克制（简约大方）
 */
 @theme {
-  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", "Source Han Serif SC",
+    serif;
+  --font-mono: "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-accent: #11a594;
-  --color-accent-strong: #0c7d70;
-  --color-accent-soft: rgba(17, 165, 148, 0.12);
+  /* 朱砂 / 印泥红 */
+  --color-akcent: #a23b2c;
+  --color-akcent-strong: #7e2c20;
+  --color-akcent-soft: rgba(162, 59, 44, 0.12);
 
-  --color-bg: #f6f7f9;
-  --color-surface: #ffffff;
-  --color-surface-2: #eef1f5;
-  --color-text: #15171c;
-  --color-text-2: #5b6472;
-  --color-border: #e3e7ec;
+  /* 宣纸 / 水墨 */
+  --color-bg: #f4eee1;
+  --color-surface: #fbf7ee;
+  --color-surface-2: #ece3d2;
+  --color-text: #2a2620;
+  --color-text-2: #7c7261;
+  --color-border: #ddd3c0;
 
-  --radius-card: 16px;
-  --radius-input: 12px;
+  --radius-card: 14px;
+  --radius-input: 10px;
 }
 
 .dark {
-  --color-bg: #0b0c10;
-  --color-surface: #14161c;
-  --color-surface-2: #1b1f27;
-  --color-text: #e9ebef;
-  --color-text-2: #99a2b2;
-  --color-border: #272c36;
-  /* accent stays identical in dark for brand fidelity */
+  /* 墨夜：暖调近黑，避免纯黑；朱砂略提亮以保对比 */
+  --color-akcent: #c25440;
+  --color-akcent-strong: #d96850;
+  --color-akcent-soft: rgba(194, 84, 64, 0.16);
+
+  --color-bg: #191613;
+  --color-surface: #221d18;
+  --color-surface-2: #2c251e;
+  --color-text: #ece4d6;
+  --color-text-2: #a89b86;
+  --color-border: #3a3128;
 }
 
 @layer base {
@@ -47,7 +57,10 @@
   }
   body {
     margin: 0;
-    background: var(--color-bg);
+    background-color: var(--color-bg);
+    /* 宣纸纹理：极淡噪点叠加，营造素朴纸感（不参与交互、不随主题动画） */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 140px 140px;
     color: var(--color-text);
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
@@ -55,15 +68,37 @@
     text-rendering: optimizeLegibility;
     min-height: 100dvh;
   }
+  /* 压低纸纹存在感，仅留触感 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background: inherit;
+    background-image: inherit;
+    background-size: inherit;
+  }
+
+  /* 标题用宋体，正文用黑体 —— 形成中国风的雅致对比 */
+  h1,
+  h2,
+  h3,
+  .cn-serif {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
   ::selection {
-    background: var(--color-accent-soft);
+    background: var(--color-akcent-soft);
     color: var(--color-text);
   }
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-akcent);
     outline-offset: 2px;
   }
-  /* Tinted, never pure-black, scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -74,6 +109,21 @@
     border: 3px solid transparent;
     background-clip: content-box;
   }
+}
+
+/* 印章式品牌标记：方形朱砂底 + 留白字 */
+.seal-mark {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 14px;
+  background: var(--color-akcent);
+  color: #fff7f2;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 1.6rem;
+  box-shadow: 0 8px 24px -8px var(--color-akcent);
 }
 
 @media (prefers-reduced-motion: reduce) {

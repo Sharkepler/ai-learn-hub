@@ -62,3 +62,39 @@ export function escapeHtml(s: string): string {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
   );
 }
+
+// 客户端压缩图片：缩放到 maxDim 以内并以 JPEG 输出，控制体积以适配
+// GitHub Contents API 的 1MB/文件上限，确保图片能写入当天 JSON 并正常同步。
+export function compressImage(
+  file: File,
+  maxDim = 1280,
+  quality = 0.82
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("读取图片失败"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("图片解析失败"));
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("无法处理图片"));
+        ctx.drawImage(img, 0, 0, w, h);
+        const mime = file.type === "image/png" ? "image/png" : "image/jpeg";
+        try {
+          resolve(canvas.toDataURL(mime, quality));
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error("压缩失败"));
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}

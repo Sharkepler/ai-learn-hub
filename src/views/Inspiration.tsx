@@ -16,7 +16,7 @@ import { useToast } from "../components/Toast";
 import { Card, Button, Field, inputCls, Modal, EmptyState, Reveal } from "../components/ui";
 import DayFilter from "../components/DayFilter";
 import type { InspirationItem, Item } from "../lib/types";
-import { uid, ymd, extractTags, fmtDateTime } from "../lib/util";
+import { uid, ymd, extractTags, fmtDateTime, compressImage } from "../lib/util";
 import * as ai from "../lib/ai";
 import { pullDayInto, getCfg } from "../lib/sync";
 
@@ -266,17 +266,21 @@ function InspirationCard({
 }
 
 function AddFab({ addItem, onAdded }: { addItem: (i: Item) => void; onAdded: () => void }) {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [tagsRaw, setTagsRaw] = useState("");
   const [img, setImg] = useState<string | undefined>();
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    const r = new FileReader();
-    r.onload = () => setImg(r.result as string);
-    r.readAsDataURL(f);
+    try {
+      const d = await compressImage(f);
+      setImg(d);
+    } catch {
+      toast("图片处理失败", "err");
+    }
   }
 
   function save() {
