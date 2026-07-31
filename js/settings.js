@@ -69,11 +69,8 @@ App.modules.settings = (function () {
     dataCard.append(el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [bExp, bImp, bClear]), fileI);
     view.appendChild(dataCard);
 
-    // 云同步
+    // 云同步（登录后自动使用登录账号的 Token）
     await renderSyncCard(view);
-
-    // 访问密码（仅本人可打开）
-    await renderLockCard(view);
 
     // 关于
     const about = el("div", { class: "card muted tiny" }, [
@@ -84,18 +81,25 @@ App.modules.settings = (function () {
     view.appendChild(about);
   };
 
-  // 云同步配置
+  // 云同步配置（登录后自动使用登录账号的 Token）
   const renderSyncCard = async (view) => {
     const s = await App.sync.getState();
     const last = await App.sync.getLastSync();
+    const authed = await App.auth.isAuthed();
+    const loginName = await App.auth.getLogin();
     const card = el("div", { class: "card" });
     card.appendChild(el("strong", {}, "☁️ 云同步（跨设备）"));
-    card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
-      "数据存于你的私有 GitHub 仓库，手机记录、电脑整理，自动互通。需一个具备 repo 权限的 GitHub Token（建议用「细粒度 Token」仅授权 ai-learn-hub-data 仓库，更安全）。"));
+
+    if (authed) {
+      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
+        `已用 GitHub 账号 @${loginName} 登录，同步凭证即该账号 Token（私有仓库 ${s.repo}，按天分文件存储）。`));
+    } else {
+      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px;color:var(--danger)" },
+        "尚未登录 GitHub，无法使用云同步。请先返回用 GitHub Token 登录。"));
+    }
 
     const enChk = el("input", { type: "checkbox", checked: s.enabled ? "checked" : null });
     const autoChk = el("input", { type: "checkbox", checked: s.auto ? "checked" : null });
-    const tokenI = el("input", { class: "input", type: "password", value: s.token || "", placeholder: "ghp_... 或 github_pat_..." });
     const repoI = el("input", { class: "input", value: s.repo || "Sharkepler/ai-learn-hub-data", placeholder: "owner/repo" });
     const branchI = el("input", { class: "input", value: s.branch || "main", placeholder: "main" });
     const statusLine = el("div", { class: "muted tiny", id: "syncStatusLine" },
@@ -104,85 +108,41 @@ App.modules.settings = (function () {
     const save = el("button", { class: "btn", style: "margin-right:8px" }, "保存并启用");
     save.onclick = async () => {
       await App.sync.saveCfg({
-        enabled: enChk.checked, token: tokenI.value.trim(),
+        enabled: authed && enChk.checked,
         repo: repoI.value.trim() || "Sharkepler/ai-learn-hub-data",
         branch: branchI.value.trim() || "main", auto: autoChk.checked,
       });
-      toast("云同步配置已保存");
+      toast(authed ? "云同步配置已保存" : "请先登录 GitHub");
       const r = await App.sync.syncNow({ refresh: true });
       if (r && r.ok) { toast("已同步 ✅"); statusLine.textContent = "上次同步：" + App.util.fmtDateTime(Date.now()); }
-      else if (r && r.skipped) toast("未配置或未完成");
+      else if (r && r.skipped) toast("未登录或未启用");
       else if (r && !r.ok) toast("首次同步失败：" + (r.error || "").slice(0, 40));
       App.app.show("settings");
     };
-    const now = el("button", { class: "btn ghost" }, "立即同步");
+    const now = el("button", { class: "btn ghost", style: "margin-right:8px" }, "立即同步");
     now.onclick = async () => {
       now.disabled = true; now.textContent = "同步中…";
       const r = await App.sync.syncNow({ refresh: true });
       now.disabled = false; now.textContent = "立即同步";
       if (r && r.ok) { toast("已同步 ✅"); statusLine.textContent = "上次同步：" + App.util.fmtDateTime(Date.now()); }
-      else if (r && r.skipped) toast("请先保存配置");
+      else if (r && r.skipped) toast("请先登录并启用");
       else if (r && !r.ok) toast("同步失败：" + (r.error || "").slice(0, 40));
+    };
+    const logoutBtn = el("button", { class: "btn danger" }, "退出登录");
+    logoutBtn.onclick = async () => {
+      if (!confirm("退出后本设备将需要重新登录才能进入，确认？")) return;
+      await App.auth.logout();
+      App.app.show("settings");
     };
 
     card.append(
       el("label", { class: "row", style: "gap:8px;margin-bottom:8px" }, [enChk, el("span", {}, "启用云同步")]),
-      field("GitHub Token（仅存本机）", tokenI),
       field("数据仓库（私有）", repoI),
       field("分支", branchI),
-      el("label", { class: "row", style: "gap:8px;margin:8px 0" }, [autoChk, el("span", {}, "自动同步（本地改动后自动上传）")]),
-      el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [save, now]),
+      el("label", { class: "row", style: "gap:8px;margin:8px 0" }, [autoChk, el("span", {}, "自动同步（改动后约 1 秒内上传当天文件）")]),
+      el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [save, now, logoutBtn]),
       statusLine,
     );
-    view.appendChild(card);
-  };
-
-  // 访问密码
-  const renderLockCard = async (view) => {
-    const card = el("div", { class: "card" });
-    card.appendChild(el("strong", {}, "🔒 访问密码"));
-    const set = await App.lock.isSet();
-    if (!set) {
-      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
-        "设置一个密码，之后打开本网页需输入密码才能查看和编辑。密码仅保存在本机，不会上传。"));
-      const newPin = el("input", { class: "input", type: "password", maxlength: "16", placeholder: "设置访问密码（至少 4 位）" });
-      const setBtn = el("button", { class: "btn", style: "margin-top:6px" }, "启用访问密码");
-      setBtn.onclick = async () => {
-        const v = newPin.value.trim();
-        if (v.length < 4) return toast("密码至少 4 位");
-        await App.lock.set(v);
-        toast("已启用访问密码 🔒");
-        App.app.show("settings");
-      };
-      card.append(field("新密码", newPin), el("div", { class: "row" }, [setBtn]));
-    } else {
-      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
-        "访问密码已启用，打开网页需输入密码。可在此修改、关闭或立即锁定。"));
-      const oldPin = el("input", { class: "input", type: "password", placeholder: "当前密码" });
-      const newPin = el("input", { class: "input", type: "password", placeholder: "新密码（留空则不修改）" });
-      const changeBtn = el("button", { class: "btn", style: "margin-right:8px" }, "修改密码");
-      changeBtn.onclick = async () => {
-        if (!(await App.lock.verify(oldPin.value))) return toast("当前密码错误");
-        const v = newPin.value.trim();
-        if (v && v.length < 4) return toast("新密码至少 4 位");
-        if (v) await App.lock.set(v);
-        toast("已更新 ✅"); App.app.show("settings");
-      };
-      const offBtn = el("button", { class: "btn danger", style: "margin-right:8px" }, "关闭访问密码");
-      offBtn.onclick = async () => {
-        if (!(await App.lock.verify(oldPin.value))) return toast("当前密码错误");
-        if (!confirm("关闭后任何拿到链接的人都能打开并查看/编辑，确认关闭？")) return;
-        await App.lock.remove();
-        toast("已关闭访问密码"); App.app.show("settings");
-      };
-      const lockBtn = el("button", { class: "btn ghost" }, "立即锁定");
-      lockBtn.onclick = () => App.app.lockNow();
-      card.append(
-        field("当前密码", oldPin),
-        field("新密码（可选）", newPin),
-        el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [changeBtn, offBtn, lockBtn]),
-      );
-    }
     view.appendChild(card);
   };
 

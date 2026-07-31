@@ -8,14 +8,16 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <!-- 访问密码锁屏 -->
-  <div id="lockScreen" hidden>
-    <div class="lock-box">
-      <div class="lock-logo">智学 <span>🔒</span></div>
-      <div class="lock-sub">个人学习与灵感空间</div>
-      <input id="lockPin" class="input lock-input" type="password" autocomplete="off" placeholder="请输入访问密码" />
-      <button id="lockSubmit" class="btn block">解锁</button>
-      <div id="lockErr" class="lock-err"></div>
+  <!-- GitHub 登录门（仅授权账号可进入） -->
+  <div id="loginScreen" hidden>
+    <div class="login-box">
+      <div class="login-logo">智学 <span>🔒</span></div>
+      <div class="login-sub">个人学习与灵感空间 · 仅限授权 GitHub 账号</div>
+      <div class="login-allowed" id="loginAllowed">授权账号：@Sharkepler</div>
+      <input id="loginToken" class="input login-input" type="password" autocomplete="off" placeholder="粘贴你的 GitHub Token（ghp_... / github_pat_...）" />
+      <button id="loginSubmit" class="btn block">登录并进入</button>
+      <a class="login-help" href="https://github.com/settings/tokens" target="_blank" rel="noopener">如何获取 Token？（需 repo 权限）</a>
+      <div id="loginErr" class="login-err"></div>
     </div>
   </div>
 
@@ -70,6 +72,7 @@
   <script src="js/util.js"></script>
   <script src="js/db.js"></script>
   <script src="js/ai.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/learning.js"></script>
   <script src="js/inspiration.js"></script>

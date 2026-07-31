@@ -24,16 +24,13 @@ App.app = (function () {
     if (btn) btn.disabled = true;
     const r = await App.sync.syncNow({ refresh: true });
     if (btn) btn.disabled = false;
-    if (r && r.skipped) { if (r.reason === "not-configured") { toast("未配置云同步，去设置开启"); App.app.openSettings(); } }
+    if (r && r.skipped) { if (r.reason === "not-configured") { toast("未登录或未开启云同步，去设置"); App.app.openSettings(); } }
     else if (r && r.ok) toast("已同步 ✅");
     else if (r && !r.ok) toast("同步失败：" + (r.error || "").slice(0, 40));
     App.app.show(current);
   };
 
   const openSettings = () => show("settings");
-
-  // 立即锁定：应用已初始化时，仅覆盖锁屏，解锁后无需重新启动
-  const lockNow = () => presentLock(() => {});
 
   // FAB：按当前页决定动作
   const fabAction = () => {
@@ -75,67 +72,59 @@ App.app = (function () {
 
   const init = async () => {
     await App.db.open();
-    // 导航
     document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => show(t.dataset.tab)));
     document.getElementById("fab").onclick = fabAction;
     document.getElementById("btnSettings").onclick = openSettings;
     document.getElementById("syncBtn").onclick = doSync;
-    // 关闭层
     document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => {
       document.getElementById("modal").hidden = true;
       document.getElementById("searchSheet").hidden = true;
     }));
     initSearch();
     show("learning");
-    // 云同步：进入即拉取一次（若已配置）
     App.sync.init();
   };
 
-  return { init, show, openSettings, lockNow, get current() { return current; } };
-})();
-
-/* ===== 访问密码锁 ===== */
-App.lock = (function () {
-  const { sha256 } = App.util;
-  const SALT = "ai-learn-hub::access::v1";
-  const hashOf = (pin) => sha256(pin + SALT);
-  const getRec = () => App.db.getMeta("lock", null);
-  const isSet = async () => { const r = await getRec(); return !!(r && r.hash); };
-  const verify = async (pin) => {
-    const r = await getRec();
-    if (!r || !r.hash) return true;
-    return (await hashOf(pin)) === r.hash;
+  // 登录弹层：校验 GitHub Token 所属账号，仅授权账号放行
+  const presentLogin = (onOk) => {
+    const ls = document.getElementById("loginScreen");
+    const token = document.getElementById("loginToken");
+    const err = document.getElementById("loginErr");
+    const submit = document.getElementById("loginSubmit");
+    ls.hidden = false; err.textContent = ""; token.value = "";
+    const tryLogin = async () => {
+      const v = token.value.trim();
+      if (!v) { err.textContent = "请输入 GitHub Token"; return; }
+      submit.disabled = true; submit.textContent = "校验中…";
+      try {
+        const loginName = await App.auth.login(v);
+        token.value = ""; ls.hidden = true;
+        toast("欢迎，@" + loginName);
+        onOk();
+      } catch (e) {
+        err.textContent = e.message || "登录失败";
+      } finally {
+        submit.disabled = false; submit.textContent = "登录并进入";
+      }
+    };
+    submit.onclick = tryLogin;
+    token.onkeydown = (e) => { if (e.key === "Enter") tryLogin(); };
+    setTimeout(() => token.focus(), 60);
   };
-  const set = async (pin) => { await App.db.setMeta("lock", { hash: await hashOf(pin), setAt: Date.now() }); };
-  const remove = async () => { await App.db.setMeta("lock", null); };
-  return { isSet, verify, set, remove };
+
+  return {
+    init, show, openSettings, presentLogin,
+    get current() { return current; },
+  };
 })();
 
 const startApp = async () => { await App.app.init(); };
 
-const presentLock = (onUnlock) => {
-  const ls = document.getElementById("lockScreen");
-  const pin = document.getElementById("lockPin");
-  const err = document.getElementById("lockErr");
-  const submit = document.getElementById("lockSubmit");
-  ls.hidden = false; err.textContent = ""; pin.value = "";
-  const tryUnlock = async () => {
-    const v = pin.value;
-    if (!v) { err.textContent = "请输入密码"; return; }
-    if (await App.lock.verify(v)) {
-      pin.value = ""; ls.hidden = true; onUnlock();
-    } else { err.textContent = "密码错误，请重试"; pin.value = ""; pin.focus(); }
-  };
-  submit.onclick = tryUnlock;
-  pin.onkeydown = (e) => { if (e.key === "Enter") tryUnlock(); };
-  setTimeout(() => pin.focus(), 60);
-};
-
 document.addEventListener("DOMContentLoaded", async () => {
   try { await App.db.open(); } catch (e) {}
-  if (await App.lock.isSet()) {
-    presentLock(startApp); // 已设密码：先锁屏，验证通过再启动
+  if (!(await App.auth.isAuthed())) {
+    App.app.presentLogin(startApp); // 未登录：先校验 GitHub 账号，通过才启动
   } else {
-    startApp(); // 未设密码：直接启动
+    startApp();
   }
 });

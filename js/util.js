@@ -1,5 +1,7 @@
 /* ===== 通用工具函数 ===== */
 window.App = window.App || {};
+// 允许进入本应用的 GitHub 登录名白名单（仅这些账号可登录）
+App.ALLOWED_GITHUB_LOGINS = ["Sharkepler"];
 App.util = (function () {
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));

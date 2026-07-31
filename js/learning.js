@@ -5,6 +5,7 @@ App.modules.learning = (function () {
   const TOPICS = ["AI技术", "编程", "行业趋势", "产品设计", "其他"];
 
   let filterTopic = "全部";
+  let filterDay = "";
 
   const render = async (view) => {
     const all = (await App.db.getAll("learnings")).filter((x) => !x.deleted);
@@ -32,12 +33,19 @@ App.modules.learning = (function () {
           onclick: () => { filterTopic = t; render(view); } }, t)));
     view.appendChild(chips);
 
+    // 按天搜索
+    view.appendChild(dayFilterBar(view));
+
     // 学习路径可视化
     view.appendChild(learningPath(all));
 
     // 列表
     view.appendChild(el("h3", {}, "最近记录"));
-    const list = filterTopic === "全部" ? all : all.filter((x) => x.topic === filterTopic);
+    const list = all.filter((x) => {
+      if (filterTopic !== "全部" && x.topic !== filterTopic) return false;
+      if (filterDay && App.sync.dayKey(x.createdAt) !== filterDay) return false;
+      return true;
+    });
     if (!list.length) {
       view.appendChild(el("div", { class: "empty" }, [
         el("div", { class: "big" }, "📝"), el("div", {}, "还没有学习记录，点右下角 ＋ 开始记录吧"),
@@ -158,6 +166,22 @@ App.modules.learning = (function () {
   };
 
   const field = (label, node) => el("div", { class: "field" }, [el("label", {}, label), node]);
+
+  // 按天搜索：选择某天后，先按需拉取该天云端数据，再按本地 createdAt 过滤
+  const dayFilterBar = (view) => {
+    const bar = el("div", { class: "day-filter" });
+    const dateInput = el("input", { type: "date", value: filterDay, title: "按创建日搜索" });
+    dateInput.onchange = async (e) => {
+      filterDay = e.target.value || "";
+      if (filterDay) {
+        try { await App.sync.pullDayInto(filterDay); } catch (err) { /* 忽略拉取失败 */ }
+      }
+      render(view);
+    };
+    const clear = el("button", { class: "text-btn", onclick: () => { filterDay = ""; dateInput.value = ""; render(view); } }, "全部");
+    bar.append(el("span", { class: "muted tiny" }, "按天"), dateInput, clear);
+    return bar;
+  };
 
   return { render, openForm };
 })();

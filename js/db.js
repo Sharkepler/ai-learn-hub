@@ -40,7 +40,7 @@ App.db = (function () {
     if (store === "learnings" || store === "inspirations") {
       obj.updatedAt = Date.now();
       if (!obj.createdAt) obj.createdAt = obj.updatedAt;
-      if (!_suppressSync && App.sync && App.sync.schedulePush) App.sync.schedulePush();
+      if (!_suppressSync && App.sync && App.sync.schedulePushDay) App.sync.schedulePushDay(obj);
     }
     const r = tx(store, "readwrite").put(obj);
     r.onsuccess = () => res(obj);

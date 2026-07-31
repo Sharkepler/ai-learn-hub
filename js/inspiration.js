@@ -4,6 +4,7 @@ App.modules.inspiration = (function () {
   const { el, esc, toast, openModal, closeModal, fmtDateTime, uid } = App.util;
 
   let filterTag = "全部";
+  let filterDay = "";
   let allItems = [];
 
   const render = async (view) => {
@@ -15,6 +16,9 @@ App.modules.inspiration = (function () {
 
     // 快速捕捉
     view.appendChild(quickCapture(view));
+
+    // 按天搜索
+    view.appendChild(dayFilterBar(view));
 
     // 标签筛选
     const tags = ["全部", ...new Set(allItems.flatMap((x) => x.tags || []))].filter(Boolean);
@@ -32,7 +36,11 @@ App.modules.inspiration = (function () {
     }
 
     view.appendChild(el("h3", {}, "灵感墙"));
-    const list = filterTag === "全部" ? allItems : allItems.filter((x) => (x.tags || []).includes(filterTag));
+    const list = allItems.filter((x) => {
+      if (filterTag !== "全部" && !(x.tags || []).includes(filterTag)) return false;
+      if (filterDay && App.sync.dayKey(x.createdAt) !== filterDay) return false;
+      return true;
+    });
     if (!list.length) {
       view.appendChild(el("div", { class: "empty" }, [
         el("div", { class: "big" }, "✨"), el("div", {}, "还没有灵感，上方输入框随手记一条"),
@@ -171,6 +179,22 @@ App.modules.inspiration = (function () {
   };
 
   const field = (label, node) => el("div", { class: "field" }, [el("label", {}, label), node]);
+
+  // 按天搜索：选择某天后，先按需拉取该天云端数据，再按本地 createdAt 过滤
+  const dayFilterBar = (view) => {
+    const bar = el("div", { class: "day-filter" });
+    const dateInput = el("input", { type: "date", value: filterDay, title: "按创建日搜索" });
+    dateInput.onchange = async (e) => {
+      filterDay = e.target.value || "";
+      if (filterDay) {
+        try { await App.sync.pullDayInto(filterDay); } catch (err) { /* 忽略拉取失败 */ }
+      }
+      render(view);
+    };
+    const clear = el("button", { class: "text-btn", onclick: () => { filterDay = ""; dateInput.value = ""; render(view); } }, "全部");
+    bar.append(el("span", { class: "muted tiny" }, "按天"), dateInput, clear);
+    return bar;
+  };
 
   return { render };
 })();

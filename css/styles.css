@@ -209,19 +209,30 @@ svg.chart { width: 100%; display: block; }
   .view { padding-top: 22px; }
 }
 
-/* ===== 访问密码锁屏 ===== */
-#lockScreen {
+/* ===== GitHub 登录门 ===== */
+#loginScreen {
   position: fixed; inset: 0; z-index: 100;
   background: linear-gradient(160deg, #4f46e5, #06b6d4);
   display: grid; place-items: center; padding: 24px;
 }
-#lockScreen[hidden] { display: none; }
-.lock-box {
-  width: min(360px, 92vw); background: var(--surface);
+#loginScreen[hidden] { display: none; }
+.login-box {
+  width: min(380px, 92vw); background: var(--surface);
   border-radius: 18px; padding: 30px 22px; box-shadow: var(--shadow); text-align: center;
 }
-.lock-logo { font-size: 24px; font-weight: 800; color: var(--primary); }
-.lock-logo span { font-size: 20px; }
-.lock-sub { color: var(--text-2); font-size: 13px; margin: 6px 0 22px; }
-.lock-input { text-align: center; letter-spacing: 3px; font-size: 16px; margin-bottom: 14px; }
-.lock-err { color: var(--danger); font-size: 13px; min-height: 18px; margin-top: 10px; }
+.login-logo { font-size: 24px; font-weight: 800; color: var(--primary); }
+.login-logo span { font-size: 20px; }
+.login-sub { color: var(--text-2); font-size: 13px; margin: 6px 0 10px; }
+.login-allowed {
+  display: inline-block; font-size: 12px; color: var(--primary);
+  background: var(--primary-soft); border-radius: 999px; padding: 4px 12px; margin-bottom: 18px;
+}
+.login-input { text-align: center; font-size: 14px; margin-bottom: 14px; }
+.login-help { display: block; font-size: 12px; color: var(--text-2); margin-top: 12px; text-decoration: none; }
+.login-help:hover { color: var(--primary); }
+.login-err { color: var(--danger); font-size: 13px; min-height: 18px; margin-top: 10px; }
+
+/* ===== 按天搜索 ===== */
+.day-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.day-filter input[type="date"] { flex: 1; min-width: 140px; }
+.day-filter .text-btn { font-size: 13px; }
