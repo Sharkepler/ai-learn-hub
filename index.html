@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>智学 · AI学习与灵感管理</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- 顶部栏 -->
+  <header class="appbar">
+    <div class="appbar-left">
+      <span class="logo">智学</span>
+      <span class="logo-sub">AI 学习与灵感管理</span>
+    </div>
+    <div class="appbar-right">
+      <button class="icon-btn" id="btnGlobalSearch" title="搜索">🔍</button>
+      <button class="icon-btn" id="btnSettings" title="设置">⚙️</button>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <main id="view" class="view"></main>
+
+  <!-- 底部导航（移动端为主，桌面端也显示） -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-tab="learning"><span class="ic">📚</span><span>学习</span></button>
+    <button class="tab" data-tab="inspiration"><span class="ic">💡</span><span>灵感</span></button>
+    <button class="tab" data-tab="dashboard"><span class="ic">📊</span><span>看板</span></button>
+    <button class="tab" data-tab="settings"><span class="ic">⚙️</span><span>设置</span></button>
+  </nav>
+
+  <!-- 悬浮新建按钮 -->
+  <button class="fab" id="fab" title="新建">＋</button>
+
+  <!-- 全局搜索抽屉 -->
+  <div class="sheet" id="searchSheet" hidden>
+    <div class="sheet-mask" data-close></div>
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <input type="search" id="searchInput" class="input" placeholder="搜索学习内容、灵感、标签…" autofocus />
+        <button class="text-btn" data-close>取消</button>
+      </div>
+      <div class="sheet-body" id="searchResults"></div>
+    </div>
+  </div>
+
+  <!-- 通用模态框 -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-mask" data-close></div>
+    <div class="modal-panel" id="modalPanel"></div>
+  </div>
+
+  <!-- 轻提示 -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/util.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/learning.js"></script>
+  <script src="js/inspiration.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
