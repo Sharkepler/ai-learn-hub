@@ -32,6 +32,9 @@ App.app = (function () {
 
   const openSettings = () => show("settings");
 
+  // 立即锁定：应用已初始化时，仅覆盖锁屏，解锁后无需重新启动
+  const lockNow = () => presentLock(() => {});
+
   // FAB：按当前页决定动作
   const fabAction = () => {
     if (current === "learning") App.modules.learning.openForm(null, view());
@@ -88,7 +91,51 @@ App.app = (function () {
     App.sync.init();
   };
 
-  return { init, show, openSettings, get current() { return current; } };
+  return { init, show, openSettings, lockNow, get current() { return current; } };
 })();
 
-document.addEventListener("DOMContentLoaded", App.app.init);
+/* ===== 访问密码锁 ===== */
+App.lock = (function () {
+  const { sha256 } = App.util;
+  const SALT = "ai-learn-hub::access::v1";
+  const hashOf = (pin) => sha256(pin + SALT);
+  const getRec = () => App.db.getMeta("lock", null);
+  const isSet = async () => { const r = await getRec(); return !!(r && r.hash); };
+  const verify = async (pin) => {
+    const r = await getRec();
+    if (!r || !r.hash) return true;
+    return (await hashOf(pin)) === r.hash;
+  };
+  const set = async (pin) => { await App.db.setMeta("lock", { hash: await hashOf(pin), setAt: Date.now() }); };
+  const remove = async () => { await App.db.setMeta("lock", null); };
+  return { isSet, verify, set, remove };
+})();
+
+const startApp = async () => { await App.app.init(); };
+
+const presentLock = (onUnlock) => {
+  const ls = document.getElementById("lockScreen");
+  const pin = document.getElementById("lockPin");
+  const err = document.getElementById("lockErr");
+  const submit = document.getElementById("lockSubmit");
+  ls.hidden = false; err.textContent = ""; pin.value = "";
+  const tryUnlock = async () => {
+    const v = pin.value;
+    if (!v) { err.textContent = "请输入密码"; return; }
+    if (await App.lock.verify(v)) {
+      pin.value = ""; ls.hidden = true; onUnlock();
+    } else { err.textContent = "密码错误，请重试"; pin.value = ""; pin.focus(); }
+  };
+  submit.onclick = tryUnlock;
+  pin.onkeydown = (e) => { if (e.key === "Enter") tryUnlock(); };
+  setTimeout(() => pin.focus(), 60);
+};
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try { await App.db.open(); } catch (e) {}
+  if (await App.lock.isSet()) {
+    presentLock(startApp); // 已设密码：先锁屏，验证通过再启动
+  } else {
+    startApp(); // 未设密码：直接启动
+  }
+});

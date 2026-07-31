@@ -208,3 +208,20 @@ svg.chart { width: 100%; display: block; }
   .fab { right: max(18px, calc((100vw - var(--maxw)) / 2 - 70px)); }
   .view { padding-top: 22px; }
 }
+
+/* ===== 访问密码锁屏 ===== */
+#lockScreen {
+  position: fixed; inset: 0; z-index: 100;
+  background: linear-gradient(160deg, #4f46e5, #06b6d4);
+  display: grid; place-items: center; padding: 24px;
+}
+#lockScreen[hidden] { display: none; }
+.lock-box {
+  width: min(360px, 92vw); background: var(--surface);
+  border-radius: 18px; padding: 30px 22px; box-shadow: var(--shadow); text-align: center;
+}
+.lock-logo { font-size: 24px; font-weight: 800; color: var(--primary); }
+.lock-logo span { font-size: 20px; }
+.lock-sub { color: var(--text-2); font-size: 13px; margin: 6px 0 22px; }
+.lock-input { text-align: center; letter-spacing: 3px; font-size: 16px; margin-bottom: 14px; }
+.lock-err { color: var(--danger); font-size: 13px; min-height: 18px; margin-top: 10px; }

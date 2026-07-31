@@ -8,6 +8,17 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- 访问密码锁屏 -->
+  <div id="lockScreen" hidden>
+    <div class="lock-box">
+      <div class="lock-logo">智学 <span>🔒</span></div>
+      <div class="lock-sub">个人学习与灵感空间</div>
+      <input id="lockPin" class="input lock-input" type="password" autocomplete="off" placeholder="请输入访问密码" />
+      <button id="lockSubmit" class="btn block">解锁</button>
+      <div id="lockErr" class="lock-err"></div>
+    </div>
+  </div>
+
   <!-- 顶部栏 -->
   <header class="appbar">
     <div class="appbar-left">

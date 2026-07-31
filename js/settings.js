@@ -72,6 +72,9 @@ App.modules.settings = (function () {
     // 云同步
     await renderSyncCard(view);
 
+    // 访问密码（仅本人可打开）
+    await renderLockCard(view);
+
     // 关于
     const about = el("div", { class: "card muted tiny" }, [
       el("strong", {}, "关于 · 智学"), el("br"),
@@ -131,6 +134,55 @@ App.modules.settings = (function () {
       el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [save, now]),
       statusLine,
     );
+    view.appendChild(card);
+  };
+
+  // 访问密码
+  const renderLockCard = async (view) => {
+    const card = el("div", { class: "card" });
+    card.appendChild(el("strong", {}, "🔒 访问密码"));
+    const set = await App.lock.isSet();
+    if (!set) {
+      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
+        "设置一个密码，之后打开本网页需输入密码才能查看和编辑。密码仅保存在本机，不会上传。"));
+      const newPin = el("input", { class: "input", type: "password", maxlength: "16", placeholder: "设置访问密码（至少 4 位）" });
+      const setBtn = el("button", { class: "btn", style: "margin-top:6px" }, "启用访问密码");
+      setBtn.onclick = async () => {
+        const v = newPin.value.trim();
+        if (v.length < 4) return toast("密码至少 4 位");
+        await App.lock.set(v);
+        toast("已启用访问密码 🔒");
+        App.app.show("settings");
+      };
+      card.append(field("新密码", newPin), el("div", { class: "row" }, [setBtn]));
+    } else {
+      card.appendChild(el("div", { class: "muted tiny", style: "margin:4px 0 10px" },
+        "访问密码已启用，打开网页需输入密码。可在此修改、关闭或立即锁定。"));
+      const oldPin = el("input", { class: "input", type: "password", placeholder: "当前密码" });
+      const newPin = el("input", { class: "input", type: "password", placeholder: "新密码（留空则不修改）" });
+      const changeBtn = el("button", { class: "btn", style: "margin-right:8px" }, "修改密码");
+      changeBtn.onclick = async () => {
+        if (!(await App.lock.verify(oldPin.value))) return toast("当前密码错误");
+        const v = newPin.value.trim();
+        if (v && v.length < 4) return toast("新密码至少 4 位");
+        if (v) await App.lock.set(v);
+        toast("已更新 ✅"); App.app.show("settings");
+      };
+      const offBtn = el("button", { class: "btn danger", style: "margin-right:8px" }, "关闭访问密码");
+      offBtn.onclick = async () => {
+        if (!(await App.lock.verify(oldPin.value))) return toast("当前密码错误");
+        if (!confirm("关闭后任何拿到链接的人都能打开并查看/编辑，确认关闭？")) return;
+        await App.lock.remove();
+        toast("已关闭访问密码"); App.app.show("settings");
+      };
+      const lockBtn = el("button", { class: "btn ghost" }, "立即锁定");
+      lockBtn.onclick = () => App.app.lockNow();
+      card.append(
+        field("当前密码", oldPin),
+        field("新密码（可选）", newPin),
+        el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, [changeBtn, offBtn, lockBtn]),
+      );
+    }
     view.appendChild(card);
   };
 
