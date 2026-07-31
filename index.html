@@ -1,83 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#4f46e5" />
-  <title>智学 · AI学习与灵感管理</title>
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-<body>
-  <!-- GitHub 登录门（仅授权账号可进入） -->
-  <div id="loginScreen" hidden>
-    <div class="login-box">
-      <div class="login-logo">智学 <span>🔒</span></div>
-      <div class="login-sub">个人学习与灵感空间 · 仅限授权 GitHub 账号</div>
-      <div class="login-allowed" id="loginAllowed">授权账号：@Sharkepler</div>
-      <input id="loginToken" class="input login-input" type="password" autocomplete="off" placeholder="粘贴你的 GitHub Token（ghp_... / github_pat_...）" />
-      <button id="loginSubmit" class="btn block">登录并进入</button>
-      <a class="login-help" href="https://github.com/settings/tokens" target="_blank" rel="noopener">如何获取 Token？（需 repo 权限）</a>
-      <div id="loginErr" class="login-err"></div>
-    </div>
-  </div>
-
-  <!-- 顶部栏 -->
-  <header class="appbar">
-    <div class="appbar-left">
-      <span class="logo">智学</span>
-      <span class="logo-sub">AI 学习与灵感管理</span>
-    </div>
-    <div class="appbar-right">
-      <button class="icon-btn" id="syncBtn" title="云同步" data-state="off">🚫</button>
-      <button class="icon-btn" id="btnGlobalSearch" title="搜索">🔍</button>
-      <button class="icon-btn" id="btnSettings" title="设置">⚙️</button>
-    </div>
-  </header>
-
-  <!-- 主内容 -->
-  <main id="view" class="view"></main>
-
-  <!-- 底部导航（移动端为主，桌面端也显示） -->
-  <nav class="tabbar" id="tabbar">
-    <button class="tab active" data-tab="learning"><span class="ic">📚</span><span>学习</span></button>
-    <button class="tab" data-tab="inspiration"><span class="ic">💡</span><span>灵感</span></button>
-    <button class="tab" data-tab="dashboard"><span class="ic">📊</span><span>看板</span></button>
-    <button class="tab" data-tab="settings"><span class="ic">⚙️</span><span>设置</span></button>
-  </nav>
-
-  <!-- 悬浮新建按钮 -->
-  <button class="fab" id="fab" title="新建">＋</button>
-
-  <!-- 全局搜索抽屉 -->
-  <div class="sheet" id="searchSheet" hidden>
-    <div class="sheet-mask" data-close></div>
-    <div class="sheet-panel">
-      <div class="sheet-head">
-        <input type="search" id="searchInput" class="input" placeholder="搜索学习内容、灵感、标签…" autofocus />
-        <button class="text-btn" data-close>取消</button>
-      </div>
-      <div class="sheet-body" id="searchResults"></div>
-    </div>
-  </div>
-
-  <!-- 通用模态框 -->
-  <div class="modal" id="modal" hidden>
-    <div class="modal-mask" data-close></div>
-    <div class="modal-panel" id="modalPanel"></div>
-  </div>
-
-  <!-- 轻提示 -->
-  <div class="toast" id="toast" hidden></div>
-
-  <script src="js/util.js"></script>
-  <script src="js/db.js"></script>
-  <script src="js/ai.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/sync.js"></script>
-  <script src="js/learning.js"></script>
-  <script src="js/inspiration.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0c10" />
+    <title>智学 · 个人学习与灵感空间</title>
+    <meta name="description" content="个人 AI 学习与灵感管理工具：学习追踪、灵感记录、AI 辅助、数据看板，跨设备云端同步。" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

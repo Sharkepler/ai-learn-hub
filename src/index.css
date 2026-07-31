@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/* Taste-skill: dark mode via class toggle (manual + system pref) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Design tokens. One accent, locked across the whole app (Color Consistency Lock).
+  One radius scale (Shape Consistency Lock): cards 16px, inputs 12px, pills full.
+  No AI-purple glow; calm jade accent on neutral zinc/stone bases.
+*/
+@theme {
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-accent: #11a594;
+  --color-accent-strong: #0c7d70;
+  --color-accent-soft: rgba(17, 165, 148, 0.12);
+
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef1f5;
+  --color-text: #15171c;
+  --color-text-2: #5b6472;
+  --color-border: #e3e7ec;
+
+  --radius-card: 16px;
+  --radius-input: 12px;
+}
+
+.dark {
+  --color-bg: #0b0c10;
+  --color-surface: #14161c;
+  --color-surface-2: #1b1f27;
+  --color-text: #e9ebef;
+  --color-text-2: #99a2b2;
+  --color-border: #272c36;
+  /* accent stays identical in dark for brand fidelity */
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  /* Tinted, never pure-black, scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-text-2) 35%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

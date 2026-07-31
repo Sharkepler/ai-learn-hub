@@ -1,11 +1,7 @@
-# OS junk
+node_modules
+dist
+*.log
+.npmcache
 .DS_Store
-Thumbs.db
-desktop.ini
-
-# Editor
-.vscode/
-.idea/
-
-# Local backups / exports
-*.local.json
+.env
+.env.local
