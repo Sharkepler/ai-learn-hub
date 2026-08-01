@@ -78,13 +78,23 @@ export async function getDays(): Promise<string[]> {
   return Array.from(new Set(all.map((i) => i.day))).sort().reverse();
 }
 
-export async function getMeta(key: string): Promise<any> {
+export async function getMeta<T = any>(key: string): Promise<T | undefined> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const r = tx(db, META, "readonly").get(key);
     r.onsuccess = () => resolve(r.result ? (r.result as any).value : undefined);
     r.onerror = () => reject(r.error);
   });
+}
+
+// 复用同一数据库存储加密密钥（non-extractable CryptoKey 可被结构化克隆存储），
+// 避免再开一个独立 IndexedDB 库导致 store 缺失的运行时崩溃。
+export async function getCryptoKey(): Promise<CryptoKey | undefined> {
+  return getMeta<CryptoKey>("cryptoKey");
+}
+
+export async function setCryptoKey(key: CryptoKey): Promise<void> {
+  await setMeta("cryptoKey", key);
 }
 
 export async function setMeta(key: string, value: any): Promise<void> {
