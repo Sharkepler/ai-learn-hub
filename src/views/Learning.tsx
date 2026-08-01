@@ -18,6 +18,7 @@ import {
   Modal,
   EmptyState,
   Reveal,
+  AiPanel,
 } from "../components/ui";
 import DayFilter from "../components/DayFilter";
 import type { Item, LearningItem } from "../lib/types";
@@ -101,7 +102,7 @@ export default function Learning() {
             if (modal.edit) updateItem(item);
             else addItem(item);
             setModal({ open: false, edit: null });
-            toast(modal.edit ? "已更新" : "已记录 ✅", "ok");
+            toast(modal.edit ? "学习记录已更新" : "学习记录已保存 ✅", "ok");
           }}
         />
       )}
@@ -122,6 +123,15 @@ export default function Learning() {
       )}
     </div>
   );
+}
+
+function learningSource(it: LearningItem) {
+  return [
+    `主题：${it.topic}`,
+    `学习时长：${it.minutes} 分钟`,
+    `完成进度：${it.progress}%`,
+    `备注：${it.note || "（无）"}`,
+  ].join("\n");
 }
 
 function TodaySummary({ all }: { all: LearningItem[] }) {
@@ -250,6 +260,9 @@ function LearningDetail({
           {item.updatedAt !== item.createdAt &&
             ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
+
+        {/* 三合一 AI 面板：打开即自动调用，可切换 总结 / 知识框架 / 资源推荐 */}
+        <AiPanel source={learningSource(item)} />
 
         <div className="flex justify-end gap-2 border-t border-border pt-3">
           <Button variant="ghost" onClick={onEdit}>
