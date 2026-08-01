@@ -19,6 +19,7 @@ import {
   EmptyState,
   Reveal,
   AiPanel,
+  ConfirmDialog,
 } from "../components/ui";
 import DayFilter from "../components/DayFilter";
 import type { Item, LearningItem } from "../lib/types";
@@ -35,6 +36,14 @@ export default function Learning() {
     { open: false, edit: null }
   );
   const [detail, setDetail] = useState<LearningItem | null>(null);
+  const [pendingDel, setPendingDel] = useState<LearningItem | null>(null);
+
+  function askDelete(id: string) {
+    const it = items.find((i) => i.id === id);
+    if (!it) return;
+    setDetail(null);
+    setPendingDel(it as LearningItem);
+  }
 
   const all = items.filter((i) => i.kind === "learning" && !i.deleted) as LearningItem[];
   const visible = all
@@ -79,7 +88,7 @@ export default function Learning() {
                 item={it}
                 onOpen={() => setDetail(it)}
                 onEdit={() => setModal({ open: true, edit: it })}
-                onRemove={removeItem}
+                onRemove={(id) => askDelete(id)}
               />
             </Reveal>
           ))}
@@ -98,11 +107,15 @@ export default function Learning() {
         <LearningForm
           edit={modal.edit}
           onClose={() => setModal({ open: false, edit: null })}
-          onSave={(item) => {
-            if (modal.edit) updateItem(item);
-            else addItem(item);
+          onSave={async (item) => {
+            const synced = await (modal.edit ? updateItem(item) : addItem(item));
             setModal({ open: false, edit: null });
-            toast(modal.edit ? "学习记录已更新" : "学习记录已保存 ✅", "ok");
+            if (synced)
+              toast(
+                modal.edit ? "学习记录已更新 ✅" : "学习记录已保存 ✅",
+                "ok"
+              );
+            else toast("已保存到本地（未同步）", "info");
           }}
         />
       )}
@@ -115,10 +128,26 @@ export default function Learning() {
             setDetail(null);
             setModal({ open: true, edit: detail });
           }}
-          onRemove={(id) => {
-            setDetail(null);
-            removeItem(id);
+          onRemove={(id) => askDelete(id)}
+        />
+      )}
+
+      {pendingDel && (
+        <ConfirmDialog
+          open
+          title="删除学习记录"
+          message="将标记为已删除并隐藏，记录不会被真正清除，可随时恢复。"
+          confirmText="删除"
+          danger
+          onConfirm={async () => {
+            const synced = await removeItem(pendingDel.id);
+            setPendingDel(null);
+            toast(
+              synced ? "已删除（已同步）" : "已删除（本地标记）",
+              synced ? "ok" : "info"
+            );
           }}
+          onCancel={() => setPendingDel(null)}
         />
       )}
     </div>
@@ -212,9 +241,7 @@ function LearningCard({
             <Pencil size={16} />
           </button>
           <button
-            onClick={() => {
-              if (confirm("删除这条记录？")) onRemove(item.id);
-            }}
+          onClick={() => onRemove(item.id)}
             className="rounded-full p-1.5 text-text-2 transition hover:bg-red-500/10 hover:text-red-500"
           >
             <Trash size={16} />
@@ -270,9 +297,7 @@ function LearningDetail({
           </Button>
           <Button
             variant="danger"
-            onClick={() => {
-              if (confirm("删除这条记录？")) onRemove(item.id);
-            }}
+          onClick={() => onRemove(item.id)}
           >
             <Trash size={16} /> 删除
           </Button>
