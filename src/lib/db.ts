@@ -2,7 +2,8 @@ import type { Item } from "./types";
 import { ymd } from "./util";
 
 const DB_NAME = "ai-learn-hub";
-const DB_VERSION = 1;
+// v2: 确保 meta store 一定存在（v1 的旧库可能缺失 meta，导致 NotFoundError）
+const DB_VERSION = 2;
 const STORE = "items";
 const META = "meta";
 
@@ -14,6 +15,7 @@ function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
+      // v1→v2 迁移：确保 items + meta 都存在（防御性创建，不依赖旧版是否正确建了）
       if (!db.objectStoreNames.contains(STORE)) {
         const s = db.createObjectStore(STORE, { keyPath: "id" });
         s.createIndex("kind", "kind", { unique: false });
@@ -87,16 +89,6 @@ export async function getMeta<T = any>(key: string): Promise<T | undefined> {
   });
 }
 
-// 复用同一数据库存储加密密钥（non-extractable CryptoKey 可被结构化克隆存储），
-// 避免再开一个独立 IndexedDB 库导致 store 缺失的运行时崩溃。
-export async function getCryptoKey(): Promise<CryptoKey | undefined> {
-  return getMeta<CryptoKey>("cryptoKey");
-}
-
-export async function setCryptoKey(key: CryptoKey): Promise<void> {
-  await setMeta("cryptoKey", key);
-}
-
 export async function setMeta(key: string, value: any): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -104,6 +96,16 @@ export async function setMeta(key: string, value: any): Promise<void> {
     r.onsuccess = () => resolve();
     r.onerror = () => reject(r.error);
   });
+}
+
+// 加密密钥存取（复用主数据库的 meta store，避免独立库 store 缺失）。
+// non-extractable CryptoKey 可被 IndexedDB 结构化克隆存储。
+export async function getCryptoKey(): Promise<CryptoKey | undefined> {
+  return getMeta<CryptoKey>("cryptoKey");
+}
+
+export async function setCryptoKey(key: CryptoKey): Promise<void> {
+  await setMeta("cryptoKey", key);
 }
 
 // Build an item with consistent day key for per-day cloud files.
