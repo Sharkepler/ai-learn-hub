@@ -5,6 +5,7 @@ import {
   Trash,
   Image as ImageIcon,
   ArrowRight,
+  Download,
 } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
@@ -24,6 +25,13 @@ import {
 import DayFilter from "../components/DayFilter";
 import type { InspirationItem, Item } from "../lib/types";
 import { uid, ymd, extractTags, fmtDateTime, compressImage } from "../lib/util";
+import {
+  inspirationToMarkdown,
+  inspirationsToMarkdown,
+  downloadText,
+  inspirationFileName,
+  inspirationsFileName,
+} from "../lib/markdown";
 import { pullDayInto, getCfg } from "../lib/sync";
 
 export default function Inspiration() {
@@ -94,8 +102,24 @@ export default function Inspiration() {
     <div>
       {/* quick capture */}
       <Card className="mb-4">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <Lightbulb size={18} className="text-accent" /> 随手记
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Lightbulb size={18} className="text-accent" /> 随手记
+          </div>
+          {all.length > 0 && (
+            <button
+              onClick={() => {
+                downloadText(
+                  inspirationsFileName(),
+                  inspirationsToMarkdown(all)
+                );
+                toast(`已导出全部灵感（${all.length} 条）`, "ok");
+              }}
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+            >
+              <Download size={15} /> 导出全部 MD
+            </button>
+          )}
         </div>
         <textarea
           className={inputCls + " min-h-[64px] resize-none"}
@@ -299,6 +323,7 @@ function InspirationDetail({
   onZoom: (src: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const toast = useToast();
   return (
     <Modal open onClose={onClose} title="灵感详情">
       <div className="space-y-4">
@@ -350,6 +375,18 @@ function InspirationDetail({
           className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
           onClick={(e) => e.stopPropagation()}
         >
+          <button
+            onClick={() => {
+              downloadText(
+                inspirationFileName(item),
+                inspirationToMarkdown(item)
+              );
+              toast("已导出为 Markdown", "ok");
+            }}
+            className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+          >
+            <Download size={16} /> 另存为 Markdown
+          </button>
           <button
           onClick={() => onRemove(item.id)}
             className="ml-auto flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
