@@ -26,6 +26,8 @@ import type { Item, LearningItem } from "../lib/types";
 import { uid, ymd, fmtDur, fmtDateTime } from "../lib/util";
 import { pullDayInto, getCfg } from "../lib/sync";
 
+const PAGE = 12;
+
 const TOPICS = ["编程", "设计", "产品", "语言", "阅读", "其他"];
 
 export default function Learning({
@@ -43,6 +45,7 @@ export default function Learning({
   );
   const [detail, setDetail] = useState<LearningItem | null>(null);
   const [pendingDel, setPendingDel] = useState<LearningItem | null>(null);
+  const [limit, setLimit] = useState(PAGE);
 
   function askDelete(id: string) {
     const it = items.find((i) => i.id === id);
@@ -55,6 +58,11 @@ export default function Learning({
   const visible = all
     .filter((i) => (day ? i.day === day : true))
     .sort((a, b) => b.createdAt - a.createdAt);
+
+  // 分页：全部/按天筛选结果过多时，点「加载更多」增量展示
+  useEffect(() => setLimit(PAGE), [day]);
+  const shown = visible.slice(0, limit);
+  const hasMore = visible.length > limit;
 
   useEffect(() => {
     if (day && getCfg().enabled) {
@@ -99,18 +107,31 @@ export default function Learning({
           }
         />
       ) : (
-        <div className="space-y-3">
-          {visible.map((it) => (
-            <Reveal key={it.id}>
-              <LearningCard
-                item={it}
-                onOpen={() => setDetail(it)}
-                onEdit={() => setModal({ open: true, edit: it })}
-                onRemove={(id) => askDelete(id)}
-              />
-            </Reveal>
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {shown.map((it) => (
+              <Reveal key={it.id}>
+                <LearningCard
+                  item={it}
+                  onOpen={() => setDetail(it)}
+                  onEdit={() => setModal({ open: true, edit: it })}
+                  onRemove={(id) => askDelete(id)}
+                />
+              </Reveal>
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="pt-1">
+              <button
+                onClick={() => setLimit((l) => l + PAGE)}
+                className="mx-auto block w-full max-w-xs rounded-full bg-surface-2 py-2.5 text-sm font-medium text-text-2 transition hover:text-accent"
+              >
+                加载更多（剩余 {visible.length - limit} 条）
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <button

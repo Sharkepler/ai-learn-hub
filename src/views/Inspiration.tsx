@@ -38,6 +38,8 @@ import {
 } from "../lib/markdown";
 import { pullDayInto, getCfg } from "../lib/sync";
 
+const PAGE = 12;
+
 export default function Inspiration({
   focusId,
   onConsumeFocus,
@@ -52,6 +54,7 @@ export default function Inspiration({
   const [quick, setQuick] = useState("");
   const [quickTags, setQuickTags] = useState("");
   const [quickImg, setQuickImg] = useState<string | undefined>();
+  const [limit, setLimit] = useState(PAGE);
 
   // 详情 / 放大图（AI 面板内嵌于详情；autoRun 控制打开是否自动调用 AI）
   const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind; autoRun: boolean } | null>(null);
@@ -100,6 +103,11 @@ export default function Inspiration({
     .filter((i) => (day ? i.day === day : true))
     .filter((i) => (tag ? i.tags.includes(tag) : true))
     .sort((a, b) => b.createdAt - a.createdAt);
+
+  // 分页：全部/筛选结果过多时，点「加载更多」增量展示
+  useEffect(() => setLimit(PAGE), [day, tag]);
+  const shown = visible.slice(0, limit);
+  const hasMore = visible.length > limit;
 
   async function quickAdd() {
     const text = quick.trim();
@@ -230,19 +238,32 @@ export default function Inspiration({
           desc="把脑子里闪过的念头记下来，随时都能回看和整理。"
         />
       ) : (
-        <div className="space-y-3">
-          {visible.map((it) => (
-            <Reveal key={it.id}>
-              <InspirationCard
-                item={it}
-                onOpen={() => openDetail(it, "summarize", false)}
-                onZoom={(src) => setLightbox(src)}
-                onAi={(k) => openDetail(it, k, true)}
-                onRemove={(id) => askDelete(id)}
-              />
-            </Reveal>
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {shown.map((it) => (
+              <Reveal key={it.id}>
+                <InspirationCard
+                  item={it}
+                  onOpen={() => openDetail(it, "summarize", false)}
+                  onZoom={(src) => setLightbox(src)}
+                  onAi={(k) => openDetail(it, k, true)}
+                  onRemove={(id) => askDelete(id)}
+                />
+              </Reveal>
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="pt-1">
+              <button
+                onClick={() => setLimit((l) => l + PAGE)}
+                className="mx-auto block w-full max-w-xs rounded-full bg-surface-2 py-2.5 text-sm font-medium text-text-2 transition hover:text-accent"
+              >
+                加载更多（剩余 {visible.length - limit} 条）
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <AddFab addItem={addItem} />
