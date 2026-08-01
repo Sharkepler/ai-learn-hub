@@ -1,4 +1,4 @@
-import { Sun, Moon, Cloud, CloudArrowUp, SignOut } from "@phosphor-icons/react";
+import { Sun, Moon, Cloud, CloudArrowUp, SignOut, MagnifyingGlass } from "@phosphor-icons/react";
 import { useState } from "react";
 import type { GithubUser } from "../lib/types";
 import { fmtDateTime } from "../lib/util";
@@ -13,6 +13,7 @@ export default function TopBar({
   syncing,
   onSyncNow,
   onLogout,
+  onSearch,
 }: {
   title: string;
   isDark: boolean;
@@ -22,6 +23,7 @@ export default function TopBar({
   syncing: boolean;
   onSyncNow: () => void;
   onLogout: () => void;
+  onSearch: () => void;
 }) {
   const [menu, setMenu] = useState(false);
 
@@ -31,6 +33,15 @@ export default function TopBar({
         <h1 className="text-lg font-bold tracking-tight">{title}</h1>
 
         <div className="ml-auto flex items-center gap-1.5">
+          <button
+            onClick={onSearch}
+            title="搜索"
+            aria-label="搜索"
+            className="grid h-9 w-9 place-items-center rounded-full text-text-2 transition hover:bg-surface-2"
+          >
+            <MagnifyingGlass size={19} />
+          </button>
+
           <button
             onClick={onSyncNow}
             disabled={syncing}

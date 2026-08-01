@@ -28,7 +28,13 @@ import { pullDayInto, getCfg } from "../lib/sync";
 
 const TOPICS = ["编程", "设计", "产品", "语言", "阅读", "其他"];
 
-export default function Learning() {
+export default function Learning({
+  focusId,
+  onConsumeFocus,
+}: {
+  focusId?: string | null;
+  onConsumeFocus?: () => void;
+}) {
   const { items, addItem, updateItem, removeItem, reload } = useStore();
   const toast = useToast();
   const [day, setDay] = useState<string | null>(null);
@@ -57,6 +63,18 @@ export default function Learning() {
         .catch(() => {});
     }
   }, [day, reload]);
+
+  // 搜索结果跳转：定位到指定记录并打开详情
+  useEffect(() => {
+    if (focusId) {
+      const it = all.find((i) => i.id === focusId);
+      if (it) {
+        setDetail(it);
+        onConsumeFocus?.();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   return (
     <div>

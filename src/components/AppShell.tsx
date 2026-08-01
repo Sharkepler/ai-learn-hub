@@ -7,11 +7,12 @@ import Learning from "../views/Learning";
 import Inspiration from "../views/Inspiration";
 import Dashboard from "../views/Dashboard";
 import Settings from "../views/Settings";
+import SearchModal from "./SearchModal";
 import { useStore, syncNow } from "../state/store";
 import { applyTheme, isDarkNow } from "../lib/theme";
 import { getToken } from "../lib/auth";
 import { getCfg, pullAll } from "../lib/sync";
-import type { GithubUser } from "../lib/types";
+import type { GithubUser, Item } from "../lib/types";
 import { useToast } from "./Toast";
 
 const TITLES: Record<View, string> = {
@@ -31,6 +32,9 @@ export default function AppShell({
   const [view, setView] = useState<View>("inspiration");
   const [dark, setDark] = useState(isDarkNow());
   const [syncing, setSyncing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  // 搜索结果跳转：定位到某条记录的详情
+  const [focus, setFocus] = useState<{ view: View; id: string } | null>(null);
   const { lastSync, reload } = useStore();
   const toast = useToast();
 
@@ -97,6 +101,7 @@ export default function AppShell({
         syncing={syncing}
         onSyncNow={handleSync}
         onLogout={onLogout}
+        onSearch={() => setSearchOpen(true)}
       />
 
       <main className="mx-auto max-w-2xl px-4 pb-28 pt-4">
@@ -108,8 +113,18 @@ export default function AppShell({
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
-            {view === "learning" && <Learning />}
-            {view === "inspiration" && <Inspiration />}
+            {view === "learning" && (
+              <Learning
+                focusId={focus?.view === "learning" ? focus.id : null}
+                onConsumeFocus={() => setFocus(null)}
+              />
+            )}
+            {view === "inspiration" && (
+              <Inspiration
+                focusId={focus?.view === "inspiration" ? focus.id : null}
+                onConsumeFocus={() => setFocus(null)}
+              />
+            )}
             {view === "dashboard" && <Dashboard />}
             {view === "settings" && <Settings onSyncNow={handleSync} />}
           </motion.div>
@@ -117,6 +132,16 @@ export default function AppShell({
       </main>
 
       <BottomNav view={view} onChange={setView} />
+
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onPick={(item: Item) => {
+          setView(item.kind);
+          setFocus({ view: item.kind, id: item.id });
+          setSearchOpen(false);
+        }}
+      />
     </div>
   );
 }

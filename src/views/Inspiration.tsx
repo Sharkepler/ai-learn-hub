@@ -38,7 +38,13 @@ import {
 } from "../lib/markdown";
 import { pullDayInto, getCfg } from "../lib/sync";
 
-export default function Inspiration() {
+export default function Inspiration({
+  focusId,
+  onConsumeFocus,
+}: {
+  focusId?: string | null;
+  onConsumeFocus?: () => void;
+}) {
   const { items, addItem, updateItem, removeItem, reload } = useStore();
   const toast = useToast();
   const [day, setDay] = useState<string | null>(null);
@@ -71,6 +77,18 @@ export default function Inspiration() {
   function openDetail(item: InspirationItem, kind: AiKind = "summarize", autoRun = false) {
     setDetail({ item, kind, autoRun });
   }
+
+  // 搜索结果跳转：定位到指定记录并打开详情
+  useEffect(() => {
+    if (focusId) {
+      const it = all.find((i) => i.id === focusId);
+      if (it) {
+        openDetail(it, "summarize", false);
+        onConsumeFocus?.();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   const all = items.filter((i) => i.kind === "inspiration" && !i.deleted) as InspirationItem[];
   const tags = useMemo(
