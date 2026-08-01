@@ -44,6 +44,8 @@ export default function Inspiration() {
   const [day, setDay] = useState<string | null>(null);
   const [tag, setTag] = useState<string | null>(null);
   const [quick, setQuick] = useState("");
+  const [quickTags, setQuickTags] = useState("");
+  const [quickImg, setQuickImg] = useState<string | undefined>();
 
   // 详情 / 放大图（AI 面板内嵌于详情；autoRun 控制打开是否自动调用 AI）
   const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind; autoRun: boolean } | null>(null);
@@ -85,6 +87,9 @@ export default function Inspiration() {
     const text = quick.trim();
     if (!text) return;
     const now = Date.now();
+    const tags = Array.from(
+      new Set([...extractTags(text), ...quickTags.split(/[\s,，#]+/).map((s) => s.trim()).filter(Boolean)])
+    );
     const item: InspirationItem = {
       id: uid(),
       kind: "inspiration",
@@ -92,14 +97,27 @@ export default function Inspiration() {
       updatedAt: now,
       day: ymd(now),
       text,
-      tags: extractTags(text),
-      mediaType: "text",
+      tags,
+      mediaType: quickImg ? "image" : "text",
+      media: quickImg,
       note: "",
     };
     const synced = await addItem(item);
     setQuick("");
+    setQuickTags("");
+    setQuickImg(undefined);
     if (synced) toast("灵感已记录 ✅", "ok");
     else toast("已保存到本地（未同步）", "info");
+  }
+
+  async function onQuickImg(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      setQuickImg(await compressImage(f));
+    } catch {
+      toast("图片处理失败", "err");
+    }
   }
 
   return (
@@ -131,6 +149,23 @@ export default function Inspiration() {
           placeholder="此刻的想法… 用 #标签 分类，支持 Markdown 标注重点"
           minHeight={64}
         />
+        <Field label="标签（逗号分隔）" hint="正文里的 #话题 会自动提取">
+          <input
+            className={inputCls}
+            value={quickTags}
+            onChange={(e) => setQuickTags(e.target.value)}
+            placeholder="设计, 产品"
+          />
+        </Field>
+        <Field label="配图（可选）">
+          <label className="flex cursor-pointer items-center gap-2 rounded-[12px] border border-dashed border-border px-3 py-2.5 text-sm text-text-2">
+            <ImageIcon size={18} /> {quickImg ? "已选择图片，点击替换" : "选择图片"}
+            <input type="file" accept="image/*" className="hidden" onChange={onQuickImg} />
+          </label>
+        </Field>
+        {quickImg && (
+          <img src={quickImg} alt="" className="mt-2 max-h-40 w-full rounded-xl object-cover" />
+        )}
         <div className="mt-2 flex justify-end">
           <Button onClick={quickAdd} disabled={!quick.trim()}>
             <Plus size={16} /> 记录
