@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { CloudArrowUp } from "@phosphor-icons/react";
 import TopBar from "./TopBar";
 import BottomNav, { type View } from "./BottomNav";
 import Learning from "../views/Learning";
@@ -64,8 +65,29 @@ export default function AppShell({
     }
   }
 
+  // 同步遮罩文案
+  const syncLabel =
+    syncing ? "正在同步数据…" : undefined;
+
   return (
-    <div className="min-h-[100dvh]">
+    <div className="relative min-h-[100dvh]">
+      {/* 同步全屏遮罩：防止用户在同步未完成时关闭浏览器 */}
+      <AnimatePresence>
+        {syncing && (
+          <motion.div
+            key="sync-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg/70 backdrop-blur-sm"
+          >
+            <CloudArrowUp size={40} className="animate-spin text-accent" style={{ animationDuration: "1.2s" }} />
+            <p className="mt-3 text-sm font-medium text-text-2">{syncLabel}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <TopBar
         title={TITLES[view]}
         isDark={dark}
