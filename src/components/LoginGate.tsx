@@ -41,10 +41,15 @@ export default function LoginGate({
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-sm"
       >
-        <div className="mb-7 text-center">
-          <div className="brand-mark mx-auto mb-4">智</div>
-          <h1 className="text-2xl font-bold tracking-tight">智学</h1>
-          <p className="mt-1.5 text-sm text-text-2">个人 AI 学习与灵感空间</p>
+        <div className="mb-8 text-center">
+          <div className="brand-mark mx-auto mb-5">智</div>
+          <h1 className="font-serif text-[1.75rem] font-bold tracking-tight text-text">
+            智学
+          </h1>
+          <div className="mx-auto mt-2.5 h-px w-12 bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
+          <p className="mt-3 text-[13px] leading-relaxed text-text-2">
+            个人 AI 学习与灵感空间
+          </p>
         </div>
 
         <form
