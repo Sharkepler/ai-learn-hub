@@ -22,7 +22,7 @@ export default function LoginGate({
     setBusy(true);
     try {
       const user = await verifyToken(token.trim());
-      saveSession(token.trim(), user, remember);
+      await saveSession(token.trim(), user, remember);
       onLogin(user);
     } catch (e: any) {
       if (e?.forbidden) setErr("该 GitHub 账号无权限，仅作者本人可进入");
@@ -42,9 +42,7 @@ export default function LoginGate({
         className="w-full max-w-sm"
       >
         <div className="mb-7 text-center">
-          <div className="seal-mark mx-auto mb-4">
-            <span>智</span>
-          </div>
+          <div className="brand-mark mx-auto mb-4">智</div>
           <h1 className="text-2xl font-bold tracking-tight">智学</h1>
           <p className="mt-1.5 text-sm text-text-2">个人 AI 学习与灵感空间</p>
         </div>
@@ -72,7 +70,7 @@ export default function LoginGate({
               type="checkbox"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className="h-4 w-4 accent-akcent"
+              className="h-4 w-4 accent-accent"
             />
             记住登录（本机）
           </label>
