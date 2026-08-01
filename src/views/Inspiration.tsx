@@ -218,7 +218,7 @@ function InspirationCard({
   return (
     <Card className="cursor-pointer transition active:scale-[0.99] hover:border-accent/40">
       <div onClick={onOpen}>
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed line-clamp-4">
+        <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed line-clamp-4">
           {item.text}
         </p>
         {item.media && (
@@ -302,7 +302,7 @@ function InspirationDetail({
   return (
     <Modal open onClose={onClose} title="灵感详情">
       <div className="space-y-4">
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+        <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed">
           {item.text}
         </p>
 
@@ -331,7 +331,7 @@ function InspirationDetail({
         {item.note && (
           <div>
             <p className="mb-1 text-xs font-medium text-text-2">备注</p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed">
               {item.note}
             </p>
           </div>

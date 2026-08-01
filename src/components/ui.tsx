@@ -17,7 +17,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[16px] bg-surface border border-border p-4",
+        "rounded-[16px] bg-surface border border-border p-4 shadow-[0_1px_2px_rgba(44,38,32,0.06)]",
         className
       )}
       {...rest}
@@ -250,7 +250,7 @@ export function AiPanel({
           </button>
         </div>
       ) : (
-        <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 text-sm leading-relaxed">
+        <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 font-serif text-sm leading-relaxed">
           {text}
         </pre>
       )}

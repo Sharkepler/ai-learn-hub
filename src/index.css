@@ -4,46 +4,52 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  智学 · 简约大气 redesign (taste-skill)
-  - 配色：中性冷灰底 + 单一克制强调色（靛蓝，饱和度 <80%），跨模块一致
-  - 字体：Geist（拉丁，自托管）+ 系统中文黑体兜底；标题收紧字距
+  智学 · 暖调编辑风格 redesign (taste-skill)
+  - 配色：暖纸底（cream/ivory）+ 单一陶土色（terracotta）强调，跨模块一致
+  - 字体：Geist（UI/正文拉丁）+ 系统中文黑体；标题与正文阅读用衬线（编辑/文学感）
   - 形状：卡片 16px / 输入框 12px / 按钮与胶囊全圆（形状一致性锁）
-  - 质感：顶部极淡强调色晕染，留白克制（简约大方 + 一点设计感）
+  - 质感：顶部极淡陶土色晕染，暖调描边与柔和暖色阴影（编辑杂志感）
 */
 @theme {
   --font-sans: "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* 编辑风格衬线：Latin 用 Newsreader/Georgia，中文回退宋体/明朝体 */
+  --font-serif: "Newsreader", "Georgia", "Songti SC", "STSong", "SimSun",
+    "Noto Serif SC", "Noto Serif CJK SC", serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* 强调色：靛蓝（克制、设计感） */
-  --color-accent: #4f5bd5;
-  --color-accent-strong: #3a45c0;
-  --color-accent-soft: rgba(79, 91, 213, 0.1);
+  /* 强调色：陶土 / 赤陶（warm terracotta），饱和度克制 */
+  --color-accent: #bc5236;
+  --color-accent-strong: #a5431f;
+  --color-accent-soft: rgba(188, 82, 54, 0.12);
+  /* 纸上使用的深色强调文字（保证对比度） */
+  --color-accent-ink: #9e3f20;
 
-  /* 中性冷灰 */
-  --color-bg: #f6f7f9;
-  --color-surface: #ffffff;
-  --color-surface-2: #eef0f4;
-  --color-text: #15171c;
-  --color-text-2: #6b7280;
-  --color-border: #e6e8ee;
+  /* 暖纸中性色（非纯白非纯黑） */
+  --color-bg: #fbf6ed;
+  --color-surface: #fffcf6;
+  --color-surface-2: #f3e9db;
+  --color-text: #2c2620;
+  --color-text-2: #7a6e60;
+  --color-border: #e7dccb;
 
   --radius-card: 16px;
   --radius-input: 12px;
 }
 
 .dark {
-  /* 墨夜：暖调近黑，避免纯黑；靛蓝略提亮以保对比 */
-  --color-accent: #6b78e6;
-  --color-accent-strong: #828df0;
-  --color-accent-soft: rgba(107, 120, 230, 0.16);
+  /* 暖夜：近黑暖棕，避免纯黑；陶土提亮以保对比 */
+  --color-accent: #d9815c;
+  --color-accent-strong: #c56a45;
+  --color-accent-soft: rgba(217, 129, 92, 0.16);
+  --color-accent-ink: #e7966e;
 
-  --color-bg: #0d0e12;
-  --color-surface: #16181d;
-  --color-surface-2: #20232a;
-  --color-text: #ebedf2;
-  --color-text-2: #9aa1ad;
-  --color-border: #2a2d35;
+  --color-bg: #1c1714;
+  --color-surface: #241e19;
+  --color-surface-2: #312a22;
+  --color-text: #f3ece1;
+  --color-text-2: #b3a392;
+  --color-border: #3a312a;
 }
 
 @layer base {
@@ -63,7 +69,7 @@
     text-rendering: optimizeLegibility;
     min-height: 100dvh;
   }
-  /* 顶部极淡强调色晕染，制造一点设计呼吸感（不参与交互、不随主题动画） */
+  /* 顶部极淡陶土色晕染，制造一点暖意与设计呼吸感（不参与交互） */
   body::before {
     content: "";
     position: fixed;
@@ -72,15 +78,18 @@
     pointer-events: none;
     background: radial-gradient(
       60rem 32rem at 50% -12%,
-      color-mix(in srgb, var(--color-accent) 9%, transparent),
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
       transparent 70%
     );
   }
 
+  /* 编辑风格：标题用衬线，收紧字距，营造文学杂志感 */
   h1,
   h2,
-  h3 {
-    font-weight: 650;
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
     letter-spacing: -0.01em;
   }
 
@@ -104,7 +113,7 @@
   }
 }
 
-/* 极简品牌标记：圆形渐变单字，干净有力（替代旧版朱砂印章） */
+/* 品牌标记：陶土渐变单字（编辑杂志感的刊头印记），衬线字形更雅致 */
 .brand-mark {
   display: grid;
   place-items: center;
@@ -117,8 +126,9 @@
     var(--color-accent-strong)
   );
   color: #fff;
-  font-weight: 700;
-  font-size: 1.7rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.9rem;
   letter-spacing: 0;
   box-shadow: 0 14px 32px -12px var(--color-accent);
 }

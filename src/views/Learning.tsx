@@ -182,7 +182,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-surface-2 px-3 py-2.5">
       <p className="text-xs text-text-2">{label}</p>
-      <p className="mt-0.5 text-lg font-bold tracking-tight">{value}</p>
+      <p className="mt-0.5 font-serif text-lg font-bold tracking-tight">{value}</p>
     </div>
   );
 }
@@ -219,7 +219,7 @@ function LearningCard({
         </div>
 
         {item.note && (
-          <p className="mt-2.5 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-text-2">
+          <p className="mt-2.5 line-clamp-3 whitespace-pre-wrap font-serif text-sm leading-relaxed text-text-2">
             {item.note}
           </p>
         )}
@@ -274,7 +274,7 @@ function LearningDetail({
         <div>
           <p className="mb-1 text-xs font-medium text-text-2">备注</p>
           {item.note ? (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed">
               {item.note}
             </p>
           ) : (
