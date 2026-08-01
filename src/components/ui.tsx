@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import type { ReactNode, ButtonHTMLAttributes, HTMLAttributes } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { X, Sparkle } from "@phosphor-icons/react";
 import * as ai from "../lib/ai";
@@ -166,7 +166,7 @@ export function Spinner({ className }: { className?: string }) {
 // ---------- AiPanel (三合一 AI 辅助：打开即自动调用，可切换) ----------
 export type AiKind = "summarize" | "knowledgeFrame" | "resources";
 
-const AI_FNS: Record<AiKind, (text: string) => Promise<string>> = {
+const AI_FNS: Record<AiKind, (text: string, signal: AbortSignal) => Promise<string>> = {
   summarize: ai.summarize,
   knowledgeFrame: ai.knowledgeFrame,
   resources: ai.resources,
@@ -188,30 +188,33 @@ export function AiPanel({
   const [kind, setKind] = useState<AiKind>(initialKind);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const ctrlRef = useRef<AbortController | null>(null);
 
   // 打开记录即自动调用 AI（默认总结），切换标签时再次调用
-  useEffect(() => {
-    let active = true;
-    setKind(initialKind);
-    setBusy(true);
-    setText("");
-    AI_FNS[initialKind](source)
-      .then((r) => active && setText(r))
-      .catch((e) => active && setText("生成失败：" + (e?.message || "")))
-      .finally(() => active && setBusy(false));
-    return () => {
-      active = false;
-    };
-  }, [source, initialKind]);
-
-  function run(k: AiKind) {
+  function call(k: AiKind) {
     setKind(k);
     setBusy(true);
     setText("");
-    AI_FNS[k](source)
+    const ctrl = new AbortController();
+    ctrlRef.current = ctrl;
+    AI_FNS[k](source, ctrl.signal)
       .then((r) => setText(r))
-      .catch((e) => setText("生成失败：" + (e?.message || "")))
+      .catch((e) => {
+        if (e?.name === "AbortError") setText("已取消生成");
+        else setText("生成失败：" + (e?.message || ""));
+      })
       .finally(() => setBusy(false));
+  }
+
+  useEffect(() => {
+    call(initialKind);
+    return () => {
+      ctrlRef.current?.abort();
+    };
+  }, [source, initialKind]);
+
+  function cancel() {
+    ctrlRef.current?.abort();
   }
 
   return (
@@ -223,9 +226,10 @@ export function AiPanel({
         {AI_TABS.map(([k, label]) => (
           <button
             key={k}
-            onClick={() => run(k)}
+            disabled={busy}
+            onClick={() => call(k)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium transition",
+              "rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-40",
               kind === k
                 ? "bg-accent text-white"
                 : "bg-surface text-text-2 hover:bg-surface-2"
@@ -238,6 +242,12 @@ export function AiPanel({
       {busy ? (
         <div className="flex items-center gap-2 py-6 text-text-2">
           <Spinner /> 生成中…
+          <button
+            onClick={cancel}
+            className="ml-auto rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-text-2 hover:bg-surface-2"
+          >
+            取消
+          </button>
         </div>
       ) : (
         <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 text-sm leading-relaxed">
