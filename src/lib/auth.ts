@@ -56,12 +56,14 @@ export async function saveSession(
   remember = true
 ): Promise<void> {
   cache = { token, user };
-  const blob = await encryptJSON(cache); // 加密后再落盘
+  // 加密落盘；若加密失败（如底层存储异常）也不阻断登录，
+  // 内存中已有 token 缓存，应用可正常使用，仅刷新后需重新登录。
   try {
+    const blob = await encryptJSON(cache);
     if (remember) localStorage.setItem(SESSION_KEY, blob);
     else sessionStorage.setItem(SESSION_KEY, blob);
   } catch {
-    /* storage may be unavailable; in-memory cache still works */
+    /* encryption failed; rely on in-memory cache */
   }
 }
 
