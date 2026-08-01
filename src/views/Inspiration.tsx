@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
 import {
   Plus,
   Lightbulb,
-  Sparkle,
   Trash,
   Image as ImageIcon,
-  Spinner,
   ArrowRight,
 } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
-import { Card, Button, Field, inputCls, Modal, EmptyState, Reveal, Lightbox } from "../components/ui";
+import {
+  Card,
+  Button,
+  Field,
+  inputCls,
+  Modal,
+  EmptyState,
+  Reveal,
+  Lightbox,
+  AiPanel,
+  type AiKind,
+} from "../components/ui";
 import DayFilter from "../components/DayFilter";
 import type { InspirationItem, Item } from "../lib/types";
 import { uid, ymd, extractTags, fmtDateTime, compressImage } from "../lib/util";
-import * as ai from "../lib/ai";
 import { pullDayInto, getCfg } from "../lib/sync";
 
 export default function Inspiration() {
@@ -25,13 +32,9 @@ export default function Inspiration() {
   const [tag, setTag] = useState<string | null>(null);
   const [quick, setQuick] = useState("");
 
-  // 详情 / 放大图 / AI 辅助（提升到顶层，避免 Modal 嵌套在 Modal 内的定位问题）
-  const [detail, setDetail] = useState<InspirationItem | null>(null);
+  // 详情 / 放大图（AI 面板内嵌于详情，打开即自动调用）
+  const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [aiItem, setAiItem] = useState<InspirationItem | null>(null);
-  const [aiKind, setAiKind] = useState<"summarize" | "knowledgeFrame" | "resources">("summarize");
-  const [aiText, setAiText] = useState("");
-  const [aiBusy, setAiBusy] = useState(false);
 
   // 选中某天时，按需拉取该天的云端数据，实现"按天搜索"
   useEffect(() => {
@@ -42,24 +45,8 @@ export default function Inspiration() {
     }
   }, [day, reload]);
 
-  async function runAi(item: InspirationItem, kind: typeof aiKind) {
-    setAiItem(item);
-    setAiKind(kind);
-    setAiBusy(true);
-    setAiText("");
-    try {
-      const fn = {
-        summarize: ai.summarize,
-        knowledgeFrame: ai.knowledgeFrame,
-        resources: ai.resources,
-      }[kind];
-      const r = await fn(item.text);
-      setAiText(r);
-    } catch (e: any) {
-      setAiText("生成失败：" + (e?.message || ""));
-    } finally {
-      setAiBusy(false);
-    }
+  function openDetail(item: InspirationItem, kind: AiKind = "summarize") {
+    setDetail({ item, kind });
   }
 
   const all = items.filter((i) => i.kind === "inspiration" && !i.deleted) as InspirationItem[];
@@ -90,7 +77,7 @@ export default function Inspiration() {
     };
     addItem(item);
     setQuick("");
-    toast("已记录 ✨", "ok");
+    toast("灵感已记录 ✨", "ok");
   }
 
   return (
@@ -157,9 +144,9 @@ export default function Inspiration() {
             <Reveal key={it.id}>
               <InspirationCard
                 item={it}
-                onOpen={() => setDetail(it)}
+                onOpen={() => openDetail(it, "summarize")}
                 onZoom={(src) => setLightbox(src)}
-                onAi={runAi}
+                onAi={(k) => openDetail(it, k)}
                 onRemove={removeItem}
               />
             </Reveal>
@@ -167,14 +154,14 @@ export default function Inspiration() {
         </div>
       )}
 
-      <AddFab onAdded={() => toast("已保存 ✨", "ok")} addItem={addItem} />
+      <AddFab onAdded={() => toast("灵感已保存 ✨", "ok")} addItem={addItem} />
 
       {detail && (
         <InspirationDetail
-          item={detail}
+          item={detail.item}
+          kind={detail.kind}
           onClose={() => setDetail(null)}
           onZoom={(src) => setLightbox(src)}
-          onAi={runAi}
           onRemove={(id) => {
             setDetail(null);
             removeItem(id);
@@ -184,42 +171,6 @@ export default function Inspiration() {
 
       {lightbox && (
         <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
-      )}
-
-      {aiItem && (
-        <Modal open onClose={() => setAiItem(null)} title="AI 辅助">
-          <div className="mb-3 flex flex-wrap gap-2">
-            {(
-              [
-                ["summarize", "总结"],
-                ["knowledgeFrame", "知识框架"],
-                ["resources", "资源推荐"],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                onClick={() => runAi(aiItem, k)}
-                className={
-                  "rounded-full px-3 py-1.5 text-xs font-medium " +
-                  (aiKind === k
-                    ? "bg-accent text-white"
-                    : "bg-surface-2 text-text-2")
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {aiBusy ? (
-            <div className="flex items-center gap-2 py-8 text-text-2">
-              <Spinner /> 生成中…
-            </div>
-          ) : (
-            <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-xl bg-surface-2 p-3 text-sm leading-relaxed">
-              {aiText}
-            </pre>
-          )}
-        </Modal>
       )}
     </div>
   );
@@ -235,7 +186,7 @@ function InspirationCard({
   item: InspirationItem;
   onOpen: () => void;
   onZoom: (src: string) => void;
-  onAi: (item: InspirationItem, kind: "summarize" | "knowledgeFrame" | "resources") => void;
+  onAi: (kind: AiKind) => void;
   onRemove: (id: string) => void;
 }) {
   return (
@@ -281,19 +232,19 @@ function InspirationCard({
           查看详情 <ArrowRight size={14} />
         </button>
         <button
-          onClick={() => onAi(item, "summarize")}
-          className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+          onClick={() => onAi("summarize")}
+          className="rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
-          <Sparkle size={15} /> AI 整理
+          AI 整理
         </button>
         <button
-          onClick={() => onAi(item, "knowledgeFrame")}
+          onClick={() => onAi("knowledgeFrame")}
           className="rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
           知识框架
         </button>
         <button
-          onClick={() => onAi(item, "resources")}
+          onClick={() => onAi("resources")}
           className="rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
           资源推荐
@@ -313,15 +264,15 @@ function InspirationCard({
 
 function InspirationDetail({
   item,
+  kind,
   onClose,
   onZoom,
-  onAi,
   onRemove,
 }: {
   item: InspirationItem;
+  kind: AiKind;
   onClose: () => void;
   onZoom: (src: string) => void;
-  onAi: (item: InspirationItem, kind: "summarize" | "knowledgeFrame" | "resources") => void;
   onRemove: (id: string) => void;
 }) {
   return (
@@ -368,28 +319,13 @@ function InspirationDetail({
             ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
 
+        {/* 三合一 AI 面板：打开即自动调用，可切换 总结 / 知识框架 / 资源推荐 */}
+        <AiPanel source={item.text} initialKind={kind} />
+
         <div
           className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => onAi(item, "summarize")}
-            className="flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
-          >
-            <Sparkle size={15} /> AI 整理
-          </button>
-          <button
-            onClick={() => onAi(item, "knowledgeFrame")}
-            className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
-          >
-            知识框架
-          </button>
-          <button
-            onClick={() => onAi(item, "resources")}
-            className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
-          >
-            资源推荐
-          </button>
           <button
             onClick={() => {
               if (confirm("删除这条灵感？")) onRemove(item.id);
