@@ -6,6 +6,8 @@ import {
   Image as ImageIcon,
   ArrowRight,
   Download,
+  PencilSimple,
+  Check,
 } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
@@ -31,6 +33,7 @@ import {
   downloadText,
   inspirationFileName,
   inspirationsFileName,
+  renderMarkdown,
 } from "../lib/markdown";
 import { pullDayInto, getCfg } from "../lib/sync";
 
@@ -45,6 +48,7 @@ export default function Inspiration() {
   const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pendingDel, setPendingDel] = useState<InspirationItem | null>(null);
+  const [qcPreview, setQcPreview] = useState(false);
 
   function askDelete(id: string) {
     const it = items.find((i) => i.id === id);
@@ -123,15 +127,29 @@ export default function Inspiration() {
         </div>
         <textarea
           className={inputCls + " min-h-[64px] resize-none"}
-          placeholder="此刻的想法… 用 #标签 分类，回车后点记录"
+          placeholder="此刻的想法… 用 #标签 分类，支持 Markdown 标注重点"
           value={quick}
           onChange={(e) => setQuick(e.target.value)}
         />
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setQcPreview((p) => !p)}
+            className="text-xs font-medium text-text-2 transition hover:text-accent"
+            disabled={!quick.trim()}
+          >
+            {qcPreview ? "返回编辑" : "预览 Markdown"}
+          </button>
           <Button onClick={quickAdd} disabled={!quick.trim()}>
             <Plus size={16} /> 记录
           </Button>
         </div>
+        {qcPreview && quick.trim() && (
+          <div
+            className="md mt-2 rounded-[12px] border border-border bg-surface p-3 text-[15px] leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(quick) }}
+          />
+        )}
       </Card>
 
       <DayFilter value={day} onChange={setDay} />
@@ -242,9 +260,10 @@ function InspirationCard({
   return (
     <Card className="cursor-pointer transition active:scale-[0.99] hover:border-accent/40">
       <div onClick={onOpen}>
-        <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed line-clamp-4">
-          {item.text}
-        </p>
+        <div
+          className="md leading-relaxed max-h-40 overflow-hidden text-[15px]"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(item.text) }}
+        />
         {item.media && (
           <img
             src={item.media}
@@ -324,25 +343,80 @@ function InspirationDetail({
   onRemove: (id: string) => void;
 }) {
   const toast = useToast();
+  const { updateItem } = useStore();
+  const [current, setCurrent] = useState(item);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.text);
+  const [preview, setPreview] = useState(false);
+
+  function startEdit() {
+    setDraft(current.text);
+    setPreview(false);
+    setEditing(true);
+  }
+  async function saveEdit() {
+    const t = draft.trim();
+    if (!t) return;
+    const updated: InspirationItem = {
+      ...current,
+      text: t,
+      tags: extractTags(t),
+      updatedAt: Date.now(),
+    };
+    const synced = await updateItem(updated);
+    setCurrent(updated);
+    setEditing(false);
+    toast(synced ? "已更新 ✅" : "已保存（未同步）", synced ? "ok" : "info");
+  }
+
   return (
     <Modal open onClose={onClose} title="灵感详情">
       <div className="space-y-4">
-        <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed">
-          {item.text}
-        </p>
+        {editing ? (
+          <div className="space-y-2">
+            {preview ? (
+              <div
+                className="md font-serif text-[15px] leading-relaxed min-h-[8rem] rounded-[12px] border border-border bg-surface p-3"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(draft) }}
+              />
+            ) : (
+              <textarea
+                className={
+                  inputCls +
+                  " min-h-[8rem] resize-y font-serif text-[15px] leading-relaxed"
+                }
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="支持 Markdown：**重点** # 标题 > 引用 - 列表 `代码`"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setPreview((p) => !p)}
+              className="text-xs font-medium text-text-2 transition hover:text-accent"
+            >
+              {preview ? "返回编辑" : "预览 Markdown"}
+            </button>
+          </div>
+        ) : (
+          <div
+            className="md font-serif text-[15px] leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(current.text) }}
+          />
+        )}
 
-        {item.media && (
+        {current.media && (
           <img
-            src={item.media}
+            src={current.media}
             alt=""
-            onClick={() => onZoom(item.media!)}
+            onClick={() => onZoom(current.media!)}
             className="max-h-80 w-full cursor-zoom-in rounded-xl object-cover"
           />
         )}
 
-        {item.tags.length > 0 && (
+        {current.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {item.tags.map((t) => (
+            {current.tags.map((t) => (
               <span
                 key={t}
                 className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent"
@@ -353,46 +427,75 @@ function InspirationDetail({
           </div>
         )}
 
-        {item.note && (
+        {current.note && (
           <div>
             <p className="mb-1 text-xs font-medium text-text-2">备注</p>
             <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed">
-              {item.note}
+              {current.note}
             </p>
           </div>
         )}
 
         <p className="text-xs text-text-2">
-          创建：{fmtDateTime(item.createdAt)}
-          {item.updatedAt !== item.createdAt &&
-            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+          创建：{fmtDateTime(current.createdAt)}
+          {current.updatedAt !== current.createdAt &&
+            ` · 更新：${fmtDateTime(current.updatedAt)}`}
         </p>
 
         {/* 三合一 AI 面板：打开即自动调用，可切换 总结 / 知识框架 / 资源推荐 */}
-        <AiPanel source={item.text} initialKind={kind} />
+        <AiPanel source={current.text} initialKind={kind} />
 
         <div
           className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => {
-              downloadText(
-                inspirationFileName(item),
-                inspirationToMarkdown(item)
-              );
-              toast("已导出为 Markdown", "ok");
-            }}
-            className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
-          >
-            <Download size={16} /> 另存为 Markdown
-          </button>
-          <button
-          onClick={() => onRemove(item.id)}
-            className="ml-auto flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
-          >
-            <Trash size={16} /> 删除
-          </button>
+          {editing ? (
+            <>
+              <button
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(current.text);
+                }}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+              >
+                取消
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={!draft.trim()}
+                className="ml-auto flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent-strong disabled:opacity-50"
+              >
+                <Check size={16} /> 保存
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={startEdit}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+              >
+                <PencilSimple size={16} /> 编辑
+              </button>
+              <button
+                onClick={() => {
+                  downloadText(
+                    inspirationFileName(current),
+                    inspirationToMarkdown(current)
+                  );
+                  toast("已导出为 Markdown", "ok");
+                }}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
+              >
+                <Download size={16} /> 另存为 Markdown
+              </button>
+              <button
+                onClick={() => onRemove(current.id)}
+                className="ml-auto flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
+              >
+                <Trash size={16} /> 删除
+              </button>
+            </>
+          )}
         </div>
       </div>
     </Modal>
@@ -405,6 +508,7 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
   const [text, setText] = useState("");
   const [tagsRaw, setTagsRaw] = useState("");
   const [img, setImg] = useState<string | undefined>();
+  const [preview, setPreview] = useState(false);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -456,13 +560,32 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="新灵感">
-        <Field label="内容">
-          <textarea
-            className={inputCls + " min-h-[100px] resize-none"}
-            placeholder="写下你的灵感…"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+        <Field
+          label="内容"
+          hint={
+            <button
+              type="button"
+              onClick={() => setPreview((p) => !p)}
+              className="text-xs font-medium text-text-2 transition hover:text-accent"
+              disabled={!text.trim()}
+            >
+              {preview ? "返回编辑" : "预览 Markdown"}
+            </button>
+          }
+        >
+          {preview ? (
+            <div
+              className="md min-h-[100px] rounded-[12px] border border-border bg-surface p-3 text-[15px] leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+            />
+          ) : (
+            <textarea
+              className={inputCls + " min-h-[100px] resize-none"}
+              placeholder="写下你的灵感… 支持 Markdown：**重点** # 标题 > 引用 - 列表"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          )}
         </Field>
         <Field label="标签（逗号分隔，或从正文提取 #标签）" hint="正文里的 #话题 会自动提取">
           <input

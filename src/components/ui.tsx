@@ -65,15 +65,15 @@ export function Field({
 }: {
   label: string;
   children: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-text">
-        {label}
+      <span className="mb-1.5 flex items-center justify-between text-sm font-medium text-text">
+        <span>{label}</span>
+        {hint && <span className="text-xs font-normal text-text-2">{hint}</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-text-2">{hint}</span>}
     </label>
   );
 }
