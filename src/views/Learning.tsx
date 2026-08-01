@@ -6,6 +6,7 @@ import {
   Pencil,
   X,
   Spinner,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
@@ -32,6 +33,7 @@ export default function Learning() {
   const [modal, setModal] = useState<{ open: boolean; edit: LearningItem | null }>(
     { open: false, edit: null }
   );
+  const [detail, setDetail] = useState<LearningItem | null>(null);
 
   const all = items.filter((i) => i.kind === "learning" && !i.deleted) as LearningItem[];
   const visible = all
@@ -74,6 +76,7 @@ export default function Learning() {
             <Reveal key={it.id}>
               <LearningCard
                 item={it}
+                onOpen={() => setDetail(it)}
                 onEdit={() => setModal({ open: true, edit: it })}
                 onRemove={removeItem}
               />
@@ -99,6 +102,21 @@ export default function Learning() {
             else addItem(item);
             setModal({ open: false, edit: null });
             toast(modal.edit ? "已更新" : "已记录 ✅", "ok");
+          }}
+        />
+      )}
+
+      {detail && (
+        <LearningDetail
+          item={detail}
+          onClose={() => setDetail(null)}
+          onEdit={() => {
+            setDetail(null);
+            setModal({ open: true, edit: detail });
+          }}
+          onRemove={(id) => {
+            setDetail(null);
+            removeItem(id);
           }}
         />
       )}
@@ -132,56 +150,122 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function LearningCard({
   item,
+  onOpen,
   onEdit,
   onRemove,
 }: {
   item: LearningItem;
+  onOpen: () => void;
   onEdit: () => void;
   onRemove: (id: string) => void;
 }) {
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold tracking-tight">{item.topic}</p>
-          <p className="mt-0.5 text-sm text-text-2">{fmtDur(item.minutes)}</p>
+    <Card className="cursor-pointer transition active:scale-[0.99] hover:border-accent/40">
+      <div onClick={onOpen}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight">{item.topic}</p>
+            <p className="mt-0.5 text-sm text-text-2">{fmtDur(item.minutes)}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
+            {item.progress}%
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
-          {item.progress}%
-        </span>
+
+        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${item.progress}%` }}
+          />
+        </div>
+
+        {item.note && (
+          <p className="mt-2.5 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-text-2">
+            {item.note}
+          </p>
+        )}
+        <p className="mt-2 text-xs text-text-2">{fmtDateTime(item.createdAt)}</p>
       </div>
 
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-        <div
-          className="h-full rounded-full bg-accent"
-          style={{ width: `${item.progress}%` }}
-        />
-      </div>
-
-      {item.note && (
-        <p className="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-text-2">
-          {item.note}
-        </p>
-      )}
-      <p className="mt-2 text-xs text-text-2">{fmtDateTime(item.createdAt)}</p>
-
-      <div className="mt-2 flex justify-end gap-1 border-t border-border pt-2">
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
         <button
-          onClick={onEdit}
-          className="rounded-full p-1.5 text-text-2 transition hover:bg-surface-2"
+          onClick={onOpen}
+          className="flex items-center gap-1 text-xs font-medium text-text-2 transition hover:text-accent"
         >
-          <Pencil size={16} />
+          查看详情 <ArrowRight size={14} />
         </button>
-        <button
-          onClick={() => {
-            if (confirm("删除这条记录？")) onRemove(item.id);
-          }}
-          className="rounded-full p-1.5 text-text-2 transition hover:bg-red-500/10 hover:text-red-500"
-        >
-          <Trash size={16} />
-        </button>
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={onEdit}
+            className="rounded-full p-1.5 text-text-2 transition hover:bg-surface-2"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("删除这条记录？")) onRemove(item.id);
+            }}
+            className="rounded-full p-1.5 text-text-2 transition hover:bg-red-500/10 hover:text-red-500"
+          >
+            <Trash size={16} />
+          </button>
+        </div>
       </div>
     </Card>
+  );
+}
+
+function LearningDetail({
+  item,
+  onClose,
+  onEdit,
+  onRemove,
+}: {
+  item: LearningItem;
+  onClose: () => void;
+  onEdit: () => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <Modal open onClose={onClose} title={item.topic}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Stat label="学习时长" value={fmtDur(item.minutes)} />
+          <Stat label="完成进度" value={item.progress + "%"} />
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs font-medium text-text-2">备注</p>
+          {item.note ? (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {item.note}
+            </p>
+          ) : (
+            <p className="text-sm text-text-2">（暂无备注）</p>
+          )}
+        </div>
+
+        <p className="text-xs text-text-2">
+          创建：{fmtDateTime(item.createdAt)}
+          {item.updatedAt !== item.createdAt &&
+            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+        </p>
+
+        <div className="flex justify-end gap-2 border-t border-border pt-3">
+          <Button variant="ghost" onClick={onEdit}>
+            <Pencil size={16} /> 编辑
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (confirm("删除这条记录？")) onRemove(item.id);
+            }}
+          >
+            <Trash size={16} /> 删除
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
