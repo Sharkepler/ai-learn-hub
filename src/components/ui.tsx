@@ -248,6 +248,42 @@ export function AiPanel({
   );
 }
 
+// ---------- ConfirmDialog (二次确认弹框) ----------
+export function ConfirmDialog({
+  open,
+  title = "确认操作",
+  message,
+  confirmText = "确定",
+  cancelText = "取消",
+  danger,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <Modal open onClose={onCancel} title={title}>
+      <p className="text-sm leading-relaxed text-text-2">{message}</p>
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="ghost" onClick={onCancel}>
+          {cancelText}
+        </Button>
+        <Button variant={danger ? "danger" : "primary"} onClick={onConfirm}>
+          {confirmText}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 // ---------- EmptyState ----------
 export function EmptyState({
   icon,
