@@ -3,17 +3,15 @@ import { motion } from "motion/react";
 import {
   Plus,
   Lightbulb,
-  Tag,
   Sparkle,
   Trash,
-  Pencil,
   Image as ImageIcon,
-  X,
   Spinner,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
-import { Card, Button, Field, inputCls, Modal, EmptyState, Reveal } from "../components/ui";
+import { Card, Button, Field, inputCls, Modal, EmptyState, Reveal, Lightbox } from "../components/ui";
 import DayFilter from "../components/DayFilter";
 import type { InspirationItem, Item } from "../lib/types";
 import { uid, ymd, extractTags, fmtDateTime, compressImage } from "../lib/util";
@@ -27,6 +25,14 @@ export default function Inspiration() {
   const [tag, setTag] = useState<string | null>(null);
   const [quick, setQuick] = useState("");
 
+  // 详情 / 放大图 / AI 辅助（提升到顶层，避免 Modal 嵌套在 Modal 内的定位问题）
+  const [detail, setDetail] = useState<InspirationItem | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [aiItem, setAiItem] = useState<InspirationItem | null>(null);
+  const [aiKind, setAiKind] = useState<"summarize" | "knowledgeFrame" | "resources">("summarize");
+  const [aiText, setAiText] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+
   // 选中某天时，按需拉取该天的云端数据，实现"按天搜索"
   useEffect(() => {
     if (day && getCfg().enabled) {
@@ -35,6 +41,26 @@ export default function Inspiration() {
         .catch(() => {});
     }
   }, [day, reload]);
+
+  async function runAi(item: InspirationItem, kind: typeof aiKind) {
+    setAiItem(item);
+    setAiKind(kind);
+    setAiBusy(true);
+    setAiText("");
+    try {
+      const fn = {
+        summarize: ai.summarize,
+        knowledgeFrame: ai.knowledgeFrame,
+        resources: ai.resources,
+      }[kind];
+      const r = await fn(item.text);
+      setAiText(r);
+    } catch (e: any) {
+      setAiText("生成失败：" + (e?.message || ""));
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   const all = items.filter((i) => i.kind === "inspiration" && !i.deleted) as InspirationItem[];
   const tags = useMemo(
@@ -131,7 +157,9 @@ export default function Inspiration() {
             <Reveal key={it.id}>
               <InspirationCard
                 item={it}
-                onUpdate={updateItem}
+                onOpen={() => setDetail(it)}
+                onZoom={(src) => setLightbox(src)}
+                onAi={runAi}
                 onRemove={removeItem}
               />
             </Reveal>
@@ -140,86 +168,132 @@ export default function Inspiration() {
       )}
 
       <AddFab onAdded={() => toast("已保存 ✨", "ok")} addItem={addItem} />
+
+      {detail && (
+        <InspirationDetail
+          item={detail}
+          onClose={() => setDetail(null)}
+          onZoom={(src) => setLightbox(src)}
+          onAi={runAi}
+          onRemove={(id) => {
+            setDetail(null);
+            removeItem(id);
+          }}
+        />
+      )}
+
+      {lightbox && (
+        <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
+      )}
+
+      {aiItem && (
+        <Modal open onClose={() => setAiItem(null)} title="AI 辅助">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {(
+              [
+                ["summarize", "总结"],
+                ["knowledgeFrame", "知识框架"],
+                ["resources", "资源推荐"],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => runAi(aiItem, k)}
+                className={
+                  "rounded-full px-3 py-1.5 text-xs font-medium " +
+                  (aiKind === k
+                    ? "bg-accent text-white"
+                    : "bg-surface-2 text-text-2")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {aiBusy ? (
+            <div className="flex items-center gap-2 py-8 text-text-2">
+              <Spinner /> 生成中…
+            </div>
+          ) : (
+            <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-xl bg-surface-2 p-3 text-sm leading-relaxed">
+              {aiText}
+            </pre>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
 function InspirationCard({
   item,
-  onUpdate,
+  onOpen,
+  onZoom,
+  onAi,
   onRemove,
 }: {
   item: InspirationItem;
-  onUpdate: (i: Item) => void;
+  onOpen: () => void;
+  onZoom: (src: string) => void;
+  onAi: (item: InspirationItem, kind: "summarize" | "knowledgeFrame" | "resources") => void;
   onRemove: (id: string) => void;
 }) {
-  const toast = useToast();
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiKind, setAiKind] = useState<"summarize" | "knowledgeFrame" | "resources">("summarize");
-  const [aiText, setAiText] = useState("");
-  const [aiBusy, setAiBusy] = useState(false);
-
-  async function runAi(kind: typeof aiKind) {
-    setAiKind(kind);
-    setAiOpen(true);
-    setAiBusy(true);
-    setAiText("");
-    try {
-      const fn = { summarize: ai.summarize, knowledgeFrame: ai.knowledgeFrame, resources: ai.resources }[kind];
-      const r = await fn(item.text);
-      setAiText(r);
-    } catch (e: any) {
-      setAiText("生成失败：" + (e?.message || ""));
-    } finally {
-      setAiBusy(false);
-    }
-  }
-
   return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
-            {item.text}
-          </p>
-          {item.media && (
-            <img
-              src={item.media}
-              alt=""
-              className="mt-2 max-h-48 w-full rounded-xl object-cover"
-            />
-          )}
-          {item.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {item.tags.map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent"
-                >
-                  #{t}
-                </span>
-              ))}
-            </div>
-          )}
-          <p className="mt-2 text-xs text-text-2">{fmtDateTime(item.createdAt)}</p>
-        </div>
+    <Card className="cursor-pointer transition active:scale-[0.99] hover:border-accent/40">
+      <div onClick={onOpen}>
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed line-clamp-4">
+          {item.text}
+        </p>
+        {item.media && (
+          <img
+            src={item.media}
+            alt=""
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoom(item.media!);
+            }}
+            className="mt-2 max-h-48 w-full cursor-zoom-in rounded-xl object-cover"
+          />
+        )}
+        {item.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {item.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent"
+              >
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="mt-2 text-xs text-text-2">{fmtDateTime(item.createdAt)}</p>
       </div>
 
-      <div className="mt-3 flex items-center gap-1 border-t border-border pt-3">
+      <div
+        className="mt-3 flex flex-wrap items-center gap-1 border-t border-border pt-3"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
-          onClick={() => runAi("summarize")}
+          onClick={onOpen}
+          className="flex items-center gap-1 text-xs font-medium text-text-2 transition hover:text-accent"
+        >
+          查看详情 <ArrowRight size={14} />
+        </button>
+        <button
+          onClick={() => onAi(item, "summarize")}
           className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
           <Sparkle size={15} /> AI 整理
         </button>
         <button
-          onClick={() => runAi("knowledgeFrame")}
+          onClick={() => onAi(item, "knowledgeFrame")}
           className="rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
           知识框架
         </button>
         <button
-          onClick={() => runAi("resources")}
+          onClick={() => onAi(item, "resources")}
           className="rounded-full px-2.5 py-1.5 text-xs font-medium text-text-2 transition hover:bg-surface-2"
         >
           资源推荐
@@ -233,35 +307,100 @@ function InspirationCard({
           <Trash size={16} />
         </button>
       </div>
-
-      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="AI 辅助">
-        <div className="mb-3 flex gap-2">
-          {(["summarize", "knowledgeFrame", "resources"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => runAi(k)}
-              className={
-                "rounded-full px-3 py-1.5 text-xs font-medium " +
-                (aiKind === k
-                  ? "bg-accent text-white"
-                  : "bg-surface-2 text-text-2")
-              }
-            >
-              {k === "summarize" ? "总结" : k === "knowledgeFrame" ? "知识框架" : "资源推荐"}
-            </button>
-          ))}
-        </div>
-        {aiBusy ? (
-          <div className="flex items-center gap-2 py-8 text-text-2">
-            <Spinner /> 生成中…
-          </div>
-        ) : (
-          <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-xl bg-surface-2 p-3 text-sm leading-relaxed">
-            {aiText}
-          </pre>
-        )}
-      </Modal>
     </Card>
+  );
+}
+
+function InspirationDetail({
+  item,
+  onClose,
+  onZoom,
+  onAi,
+  onRemove,
+}: {
+  item: InspirationItem;
+  onClose: () => void;
+  onZoom: (src: string) => void;
+  onAi: (item: InspirationItem, kind: "summarize" | "knowledgeFrame" | "resources") => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <Modal open onClose={onClose} title="灵感详情">
+      <div className="space-y-4">
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+          {item.text}
+        </p>
+
+        {item.media && (
+          <img
+            src={item.media}
+            alt=""
+            onClick={() => onZoom(item.media!)}
+            className="max-h-80 w-full cursor-zoom-in rounded-xl object-cover"
+          />
+        )}
+
+        {item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {item.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent"
+              >
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {item.note && (
+          <div>
+            <p className="mb-1 text-xs font-medium text-text-2">备注</p>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {item.note}
+            </p>
+          </div>
+        )}
+
+        <p className="text-xs text-text-2">
+          创建：{fmtDateTime(item.createdAt)}
+          {item.updatedAt !== item.createdAt &&
+            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+        </p>
+
+        <div
+          className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => onAi(item, "summarize")}
+            className="flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
+          >
+            <Sparkle size={15} /> AI 整理
+          </button>
+          <button
+            onClick={() => onAi(item, "knowledgeFrame")}
+            className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
+          >
+            知识框架
+          </button>
+          <button
+            onClick={() => onAi(item, "resources")}
+            className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-2 transition hover:bg-accent-soft hover:text-accent"
+          >
+            资源推荐
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("删除这条灵感？")) onRemove(item.id);
+            }}
+            className="ml-auto flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
+          >
+            <Trash size={16} /> 删除
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
