@@ -45,8 +45,8 @@ export default function Inspiration() {
   const [tag, setTag] = useState<string | null>(null);
   const [quick, setQuick] = useState("");
 
-  // 详情 / 放大图（AI 面板内嵌于详情，打开即自动调用）
-  const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind } | null>(null);
+  // 详情 / 放大图（AI 面板内嵌于详情；autoRun 控制打开是否自动调用 AI）
+  const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind; autoRun: boolean } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pendingDel, setPendingDel] = useState<InspirationItem | null>(null);
 
@@ -66,8 +66,8 @@ export default function Inspiration() {
     }
   }, [day, reload]);
 
-  function openDetail(item: InspirationItem, kind: AiKind = "summarize") {
-    setDetail({ item, kind });
+  function openDetail(item: InspirationItem, kind: AiKind = "summarize", autoRun = false) {
+    setDetail({ item, kind, autoRun });
   }
 
   const all = items.filter((i) => i.kind === "inspiration" && !i.deleted) as InspirationItem[];
@@ -182,9 +182,9 @@ export default function Inspiration() {
             <Reveal key={it.id}>
               <InspirationCard
                 item={it}
-                onOpen={() => openDetail(it, "summarize")}
+                onOpen={() => openDetail(it, "summarize", false)}
                 onZoom={(src) => setLightbox(src)}
-                onAi={(k) => openDetail(it, k)}
+                onAi={(k) => openDetail(it, k, true)}
                 onRemove={(id) => askDelete(id)}
               />
             </Reveal>
@@ -198,6 +198,7 @@ export default function Inspiration() {
         <InspirationDetail
           item={detail.item}
           kind={detail.kind}
+          autoRun={detail.autoRun}
           onClose={() => setDetail(null)}
           onZoom={(src) => setLightbox(src)}
           onRemove={(id) => askDelete(id)}
@@ -318,12 +319,14 @@ function InspirationCard({
 function InspirationDetail({
   item,
   kind,
+  autoRun,
   onClose,
   onZoom,
   onRemove,
 }: {
   item: InspirationItem;
   kind: AiKind;
+  autoRun?: boolean;
   onClose: () => void;
   onZoom: (src: string) => void;
   onRemove: (id: string) => void;
@@ -407,8 +410,8 @@ function InspirationDetail({
             ` · 更新：${fmtDateTime(current.updatedAt)}`}
         </p>
 
-        {/* 三合一 AI 面板：打开即自动调用，可切换 总结 / 知识框架 / 资源推荐 */}
-        <AiPanel source={current.text} initialKind={kind} />
+        {/* 三合一 AI 面板：autoRun=false 时打开不自动调用，点击按钮才生成 */}
+        <AiPanel source={current.text} initialKind={kind} autoRun={autoRun} />
 
         <div
           className="flex flex-wrap items-center gap-2 border-t border-border pt-3"

@@ -397,20 +397,24 @@ const AI_TABS: [AiKind, string][] = [
 export function AiPanel({
   source,
   initialKind = "summarize",
+  autoRun = false,
 }: {
   source: string;
   initialKind?: AiKind;
+  autoRun?: boolean;
 }) {
   const [kind, setKind] = useState<AiKind>(initialKind);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
   const ctrlRef = useRef<AbortController | null>(null);
 
-  // 打开记录即自动调用 AI（默认总结），切换标签时再次调用
+  // 调用 AI；autoRun=false 时由用户点击按钮触发，打开不自动跑
   function call(k: AiKind) {
     setKind(k);
     setBusy(true);
     setText("");
+    setDone(false);
     const ctrl = new AbortController();
     ctrlRef.current = ctrl;
     AI_FNS[k](source, ctrl.signal)
@@ -419,15 +423,18 @@ export function AiPanel({
         if (e?.name === "AbortError") setText("已取消生成");
         else setText("生成失败：" + (e?.message || ""));
       })
-      .finally(() => setBusy(false));
+      .finally(() => {
+        setBusy(false);
+        setDone(true);
+      });
   }
 
   useEffect(() => {
-    call(initialKind);
+    if (autoRun) call(initialKind);
     return () => {
       ctrlRef.current?.abort();
     };
-  }, [source, initialKind]);
+  }, [source, initialKind, autoRun]);
 
   function cancel() {
     ctrlRef.current?.abort();
@@ -465,10 +472,16 @@ export function AiPanel({
             取消
           </button>
         </div>
-      ) : (
+      ) : done ? (
         <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 font-serif text-sm leading-relaxed">
           {text}
         </pre>
+      ) : (
+        <p className="py-6 text-center text-xs leading-relaxed text-text-2">
+          点击上方按钮，让 AI 帮你
+          <br />
+          总结 / 梳理框架 / 推荐资源
+        </p>
       )}
     </div>
   );
