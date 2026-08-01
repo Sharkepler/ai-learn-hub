@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import type { ReactNode, ButtonHTMLAttributes, HTMLAttributes } from "react";
 import { motion } from "motion/react";
+import { X } from "@phosphor-icons/react";
 
 export const cn = (...a: (string | false | null | undefined)[]) =>
   clsx(...a);
@@ -109,6 +110,42 @@ export function Modal({
         {children}
       </motion.div>
     </div>
+  );
+}
+
+// ---------- Lightbox (image zoom) ----------
+export function Lightbox({
+  src,
+  onClose,
+  alt,
+}: {
+  src: string;
+  onClose: () => void;
+  alt?: string;
+}) {
+  if (!src) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-black/90 p-4"
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt={alt || ""}
+        className="max-h-[88vh] max-w-[92vw] cursor-zoom-out rounded-2xl object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+      <p className="mt-3 text-xs text-white/60">点击任意处关闭</p>
+      <button
+        onClick={onClose}
+        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+        aria-label="关闭"
+      >
+        <X size={20} />
+      </button>
+    </motion.div>
   );
 }
 
