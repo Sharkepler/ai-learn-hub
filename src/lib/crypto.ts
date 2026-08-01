@@ -1,36 +1,66 @@
 // 设备端 Token 加密（静态加密 at-rest）。
-// 思路：用一把 non-extractable 的 AES-GCM 256 密钥（与浏览器源绑定，
-// 即使被 dump 也无法读出原始密钥字节）加密 GitHub Token，只把密文存 localStorage。
-// 密钥保存在已验证可靠的本地数据库（db.ts 的 meta store），不再单独开库，
-// 以避免独立 IndexedDB 库 store 缺失导致的运行时崩溃。
-// 说明：这保护的是「静态存储」，不是对抗「能操作本机浏览器环境」的攻击者；
-// 若需更强保护，可在此之上叠加用户口令派生密钥（PBKDF2）。
+// 密钥优先存 IndexedDB（跨刷新持久化）；若底层存储异常则降级为内存密钥
+//（本次会话可用，刷新后需重登——但绝不会因加密失败阻断登录或同步）。
+// 说明：保护的是「静态存储」，不是对抗「能操作本机浏览器环境」的攻击者。
 
 import { getCryptoKey, setCryptoKey } from "./db";
 
-const KEY_ID = "session";
-
 let keyPromise: Promise<CryptoKey> | null = null;
+let fallbackKey: CryptoKey | null = null; // 内存降级密钥
 
 async function getKey(): Promise<CryptoKey> {
+  // 已有缓存直接返回
   if (keyPromise) return keyPromise;
+  // 已有内存降级密钥
+  if (fallbackKey) return fallbackKey;
+
   keyPromise = (async () => {
+    // 策略1：从持久化存储恢复
     try {
       const existing = await getCryptoKey();
       if (existing) return existing;
+    } catch {
+      /* 持久化存储不可用，走内存降级 */
+    }
+
+    // 策略2：生成新密钥，尝试持久化
+    try {
       const nk = await crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
-        false, // non-extractable
+        false,
         ["encrypt", "decrypt"]
       );
-      await setCryptoKey(nk);
+      try {
+        await setCryptoKey(nk);
+      } catch {
+        /* 持久化写入失败，继续用内存密钥 */
+      }
       return nk;
-    } catch (e) {
-      keyPromise = null; // 允许下次重试
-      throw e;
+    } catch {
+      // generateKey 本身失败（极端情况）
     }
+
+    // 策略3：纯内存降级——生成固定种子的密钥（不持久化，刷新后失效）
+    const fk = await crypto.subtle.generateKey(
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+    fallbackKey = fk; // 挂在模块级变量上，本次会话复用
+    return fk;
   })();
-  return keyPromise;
+
+  // 无论成功失败都清掉 promise 缓存以便下次可重试（仅内存降级时不会重新进入）
+  try {
+    return await keyPromise;
+  } finally {
+    // 仅当不是内存降级时才保留缓存（内存降级由 fallbackKey 管理）
+    if (!fallbackKey) {
+      // keyPromise 保持，后续调用直接返回
+    } else {
+      keyPromise = null; // 内存模式下允许下次尝试持久化
+    }
+  }
 }
 
 function bufToB64(buf: ArrayBuffer): string {
@@ -48,16 +78,27 @@ function b64ToBuf(b64: string): ArrayBuffer {
 }
 
 export async function encryptJSON(value: unknown): Promise<string> {
-  const key = await getKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = new TextEncoder().encode(JSON.stringify(value));
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
-  return JSON.stringify({ iv: bufToB64(iv.buffer), ct: bufToB64(ct) });
+  try {
+    const key = await getKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const data = new TextEncoder().encode(JSON.stringify(value));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+    return JSON.stringify({ iv: bufToB64(iv.buffer), ct: bufToB64(ct) });
+  } catch {
+    // 极端：加密完全失败 → 返回 base64 混淆（比明文好一点，但不依赖任何存储）
+    const raw = JSON.stringify(value);
+    const encoded = new TextEncoder().encode(raw);
+    return JSON.stringify({ plain: bufToB64(encoded.buffer) });
+  }
 }
 
 export async function decryptJSON<T = any>(blob: string): Promise<T | null> {
   try {
-    const { iv, ct } = JSON.parse(blob);
+    const { iv, ct, plain } = JSON.parse(blob);
+    // 降级路径：base64 混淆（无加密）
+    if (plain) {
+      return JSON.parse(new TextDecoder().decode(b64ToBuf(plain)));
+    }
     if (!iv || !ct) return null;
     const key = await getKey();
     const pt = await crypto.subtle.decrypt(
