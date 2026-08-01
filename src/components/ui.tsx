@@ -14,7 +14,6 @@ import {
   Code,
   Link as LinkIcon,
   Eye,
-  PencilSimple,
 } from "@phosphor-icons/react";
 import * as ai from "../lib/ai";
 import { renderMarkdown } from "../lib/markdown";
@@ -233,7 +232,7 @@ export function MarkdownEditor({
   className?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const [preview, setPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   function run(op: (v: string, s: number, e: number) => EditOp) {
     const ta = ref.current;
@@ -333,47 +332,49 @@ export function MarkdownEditor({
             type="button"
             title={t.label}
             aria-label={t.label}
-            disabled={preview}
             onClick={t.act}
-            className="grid h-8 w-8 place-items-center rounded-md text-text-2 transition hover:bg-surface-2 hover:text-accent disabled:opacity-40"
+            className="grid h-8 w-8 place-items-center rounded-md text-text-2 transition hover:bg-surface-2 hover:text-accent"
           >
             {t.icon}
           </button>
         ))}
         <button
           type="button"
-          title={preview ? "返回编辑" : "预览效果"}
-          aria-label={preview ? "返回编辑" : "预览效果"}
-          onClick={() => setPreview((p) => !p)}
+          title={showPreview ? "隐藏预览" : "显示预览"}
+          aria-label={showPreview ? "隐藏预览" : "显示预览"}
+          onClick={() => setShowPreview((p) => !p)}
           className={cn(
             "ml-auto grid h-8 w-8 place-items-center rounded-md transition",
-            preview
+            showPreview
               ? "bg-accent-soft text-accent"
               : "text-text-2 hover:bg-surface-2 hover:text-accent"
           )}
         >
-          {preview ? <PencilSimple size={16} /> : <Eye size={16} />}
+          <Eye size={16} />
         </button>
       </div>
 
-      {/* 编辑区 / 预览区 */}
-      {preview ? (
-        <div
-          className="md max-h-[50vh] overflow-auto px-3.5 py-2.5 font-serif text-[15px] leading-relaxed"
-          dangerouslySetInnerHTML={{
-            __html: renderMarkdown(value || "*（空）*"),
-          }}
-        />
-      ) : (
+      {/* 编辑区 + 实时预览区（上下布局） */}
+      <div className={cn("relative", showPreview && value.trim() && "divide-y divide-border")}>
         <textarea
           ref={ref}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           style={{ minHeight }}
-          className="block w-full resize-y bg-transparent px-3.5 py-2.5 font-serif text-[15px] leading-relaxed text-text outline-none placeholder:text-text-2/70"
+          className="block w-full resize-y bg-transparent px-3.5 py-2.5 font-mono text-[14px] leading-relaxed text-text outline-none placeholder:text-text-2/70"
         />
-      )}
+
+        {/* 实时渲染预览：有内容且开启时显示 */}
+        {showPreview && value.trim() && (
+          <div
+            className="max-h-[40vh] overflow-auto bg-surface-2/40 px-3.5 py-2.5 font-serif text-[15px] leading-relaxed"
+            dangerouslySetInnerHTML={{
+              __html: renderMarkdown(value),
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
