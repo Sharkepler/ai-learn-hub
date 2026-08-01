@@ -9,15 +9,28 @@ import {
 } from "react";
 import type { Item } from "../lib/types";
 import { getAllItems, putItem, getMeta, setMeta } from "../lib/db";
-import { schedulePush, syncNow } from "../lib/sync";
+import { pushDay, syncNow } from "../lib/sync";
+
+// 保存/删除时真正推送到云端再返回是否成功；超时（默认 10s）视为未同步，避免离线时卡住 UI。
+async function pushWithTimeout(day: string, ms = 10000): Promise<boolean> {
+  try {
+    const p = pushDay(day);
+    const t = new Promise<boolean>((_, rej) =>
+      setTimeout(() => rej(new Error("sync-timeout")), ms)
+    );
+    return await Promise.race([p, t]);
+  } catch {
+    return false;
+  }
+}
 
 interface StoreCtx {
   items: Item[];
   loading: boolean;
   reload: () => Promise<void>;
-  addItem: (item: Item) => Promise<void>;
-  updateItem: (item: Item) => Promise<void>;
-  removeItem: (id: string) => Promise<void>;
+  addItem: (item: Item) => Promise<boolean>;
+  updateItem: (item: Item) => Promise<boolean>;
+  removeItem: (id: string) => Promise<boolean>;
   lastSync: number | null;
 }
 
@@ -42,28 +55,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     inFlight.current = false;
   }, []);
 
-  const addItem = useCallback(
-    async (item: Item) => {
-      await putItem(item);
-      schedulePush(item.day);
-      setItems((prev) => [item, ...prev]);
-    },
-    []
-  );
-
-  const updateItem = useCallback(async (item: Item) => {
+  const addItem = useCallback(async (item: Item): Promise<boolean> => {
     await putItem(item);
-    schedulePush(item.day);
-    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    const synced = await pushWithTimeout(item.day);
+    setItems((prev) => [item, ...prev]);
+    return synced;
   }, []);
 
-  const removeItem = useCallback(async (id: string) => {
+  const updateItem = useCallback(async (item: Item): Promise<boolean> => {
+    await putItem(item);
+    const synced = await pushWithTimeout(item.day);
+    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    return synced;
+  }, []);
+
+  const removeItem = useCallback(async (id: string): Promise<boolean> => {
     const cur = items.find((i) => i.id === id);
-    if (!cur) return;
+    if (!cur) return false;
     const soft: Item = { ...cur, deleted: true, updatedAt: Date.now() };
     await putItem(soft);
-    schedulePush(soft.day);
+    const synced = await pushWithTimeout(soft.day);
     setItems((prev) => prev.filter((i) => i.id !== id));
+    return synced;
   }, [items]);
 
   useEffect(() => {
