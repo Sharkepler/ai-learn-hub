@@ -1,7 +1,9 @@
 import clsx from "clsx";
 import type { ReactNode, ButtonHTMLAttributes, HTMLAttributes } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { X } from "@phosphor-icons/react";
+import { X, Sparkle } from "@phosphor-icons/react";
+import * as ai from "../lib/ai";
 
 export const cn = (...a: (string | false | null | undefined)[]) =>
   clsx(...a);
@@ -158,6 +160,91 @@ export function Spinner({ className }: { className?: string }) {
         className
       )}
     />
+  );
+}
+
+// ---------- AiPanel (三合一 AI 辅助：打开即自动调用，可切换) ----------
+export type AiKind = "summarize" | "knowledgeFrame" | "resources";
+
+const AI_FNS: Record<AiKind, (text: string) => Promise<string>> = {
+  summarize: ai.summarize,
+  knowledgeFrame: ai.knowledgeFrame,
+  resources: ai.resources,
+};
+
+const AI_TABS: [AiKind, string][] = [
+  ["summarize", "总结"],
+  ["knowledgeFrame", "知识框架"],
+  ["resources", "资源推荐"],
+];
+
+export function AiPanel({
+  source,
+  initialKind = "summarize",
+}: {
+  source: string;
+  initialKind?: AiKind;
+}) {
+  const [kind, setKind] = useState<AiKind>(initialKind);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // 打开记录即自动调用 AI（默认总结），切换标签时再次调用
+  useEffect(() => {
+    let active = true;
+    setKind(initialKind);
+    setBusy(true);
+    setText("");
+    AI_FNS[initialKind](source)
+      .then((r) => active && setText(r))
+      .catch((e) => active && setText("生成失败：" + (e?.message || "")))
+      .finally(() => active && setBusy(false));
+    return () => {
+      active = false;
+    };
+  }, [source, initialKind]);
+
+  function run(k: AiKind) {
+    setKind(k);
+    setBusy(true);
+    setText("");
+    AI_FNS[k](source)
+      .then((r) => setText(r))
+      .catch((e) => setText("生成失败：" + (e?.message || "")))
+      .finally(() => setBusy(false));
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface-2/60 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-text-2">
+        <Sparkle size={15} className="text-accent" /> AI 辅助
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {AI_TABS.map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => run(k)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium transition",
+              kind === k
+                ? "bg-accent text-white"
+                : "bg-surface text-text-2 hover:bg-surface-2"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {busy ? (
+        <div className="flex items-center gap-2 py-6 text-text-2">
+          <Spinner /> 生成中…
+        </div>
+      ) : (
+        <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 text-sm leading-relaxed">
+          {text}
+        </pre>
+      )}
+    </div>
   );
 }
 
