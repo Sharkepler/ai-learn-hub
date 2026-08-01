@@ -86,7 +86,9 @@ export function compressImage(
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("无法处理图片"));
         ctx.drawImage(img, 0, 0, w, h);
-        const mime = file.type === "image/png" ? "image/png" : "image/jpeg";
+        // 统一输出 JPEG：保证体积控制在 GitHub Contents API 的 1MB/文件上限内，
+        // 避免 PNG（尤其含透明/大图）压缩后仍超限导致图片与当天数据同步失败。
+        const mime = "image/jpeg";
         try {
           resolve(canvas.toDataURL(mime, quality));
         } catch (e) {
