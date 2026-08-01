@@ -18,6 +18,7 @@ import {
   Reveal,
   Lightbox,
   AiPanel,
+  ConfirmDialog,
   type AiKind,
 } from "../components/ui";
 import DayFilter from "../components/DayFilter";
@@ -35,6 +36,14 @@ export default function Inspiration() {
   // 详情 / 放大图（AI 面板内嵌于详情，打开即自动调用）
   const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [pendingDel, setPendingDel] = useState<InspirationItem | null>(null);
+
+  function askDelete(id: string) {
+    const it = items.find((i) => i.id === id);
+    if (!it) return;
+    setDetail(null);
+    setPendingDel(it as InspirationItem);
+  }
 
   // 选中某天时，按需拉取该天的云端数据，实现"按天搜索"
   useEffect(() => {
@@ -60,7 +69,7 @@ export default function Inspiration() {
     .filter((i) => (tag ? i.tags.includes(tag) : true))
     .sort((a, b) => b.createdAt - a.createdAt);
 
-  function quickAdd() {
+  async function quickAdd() {
     const text = quick.trim();
     if (!text) return;
     const now = Date.now();
@@ -75,9 +84,10 @@ export default function Inspiration() {
       mediaType: "text",
       note: "",
     };
-    addItem(item);
+    const synced = await addItem(item);
     setQuick("");
-    toast("灵感已记录 ✨", "ok");
+    if (synced) toast("灵感已记录 ✅", "ok");
+    else toast("已保存到本地（未同步）", "info");
   }
 
   return (
@@ -147,14 +157,14 @@ export default function Inspiration() {
                 onOpen={() => openDetail(it, "summarize")}
                 onZoom={(src) => setLightbox(src)}
                 onAi={(k) => openDetail(it, k)}
-                onRemove={removeItem}
+                onRemove={(id) => askDelete(id)}
               />
             </Reveal>
           ))}
         </div>
       )}
 
-      <AddFab onAdded={() => toast("灵感已保存 ✨", "ok")} addItem={addItem} />
+      <AddFab addItem={addItem} />
 
       {detail && (
         <InspirationDetail
@@ -162,15 +172,31 @@ export default function Inspiration() {
           kind={detail.kind}
           onClose={() => setDetail(null)}
           onZoom={(src) => setLightbox(src)}
-          onRemove={(id) => {
-            setDetail(null);
-            removeItem(id);
-          }}
+          onRemove={(id) => askDelete(id)}
         />
       )}
 
       {lightbox && (
         <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
+      )}
+
+      {pendingDel && (
+        <ConfirmDialog
+          open
+          title="删除灵感"
+          message="将标记为已删除并隐藏，记录不会被真正清除，可随时恢复。"
+          confirmText="删除"
+          danger
+          onConfirm={async () => {
+            const synced = await removeItem(pendingDel.id);
+            setPendingDel(null);
+            toast(
+              synced ? "已删除（已同步）" : "已删除（本地标记）",
+              synced ? "ok" : "info"
+            );
+          }}
+          onCancel={() => setPendingDel(null)}
+        />
       )}
     </div>
   );
@@ -250,9 +276,7 @@ function InspirationCard({
           资源推荐
         </button>
         <button
-          onClick={() => {
-            if (confirm("删除这条灵感？")) onRemove(item.id);
-          }}
+          onClick={() => onRemove(item.id)}
           className="ml-auto rounded-full p-1.5 text-text-2 transition hover:bg-red-500/10 hover:text-red-500"
         >
           <Trash size={16} />
@@ -327,9 +351,7 @@ function InspirationDetail({
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            onClick={() => {
-              if (confirm("删除这条灵感？")) onRemove(item.id);
-            }}
+          onClick={() => onRemove(item.id)}
             className="ml-auto flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
           >
             <Trash size={16} /> 删除
@@ -340,7 +362,7 @@ function InspirationDetail({
   );
 }
 
-function AddFab({ addItem, onAdded }: { addItem: (i: Item) => void; onAdded: () => void }) {
+function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -358,7 +380,7 @@ function AddFab({ addItem, onAdded }: { addItem: (i: Item) => void; onAdded: () 
     }
   }
 
-  function save() {
+  async function save() {
     const t = text.trim();
     if (!t) return;
     const now = Date.now();
@@ -377,12 +399,13 @@ function AddFab({ addItem, onAdded }: { addItem: (i: Item) => void; onAdded: () 
       media: img,
       note: "",
     };
-    addItem(item);
+    const synced = await addItem(item);
     setOpen(false);
     setText("");
     setTagsRaw("");
     setImg(undefined);
-    onAdded();
+    if (synced) toast("灵感已保存 ✅", "ok");
+    else toast("已保存到本地（未同步）", "info");
   }
 
   return (
