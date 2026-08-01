@@ -68,14 +68,11 @@ export async function saveSession(
 }
 
 // 启动时异步解密恢复会话（Token 已加密，需 await）。
+// 任何异常都不抛出（包括底层 IndexedDB 崩溃），返回 null 让用户重新登录。
 export async function initSession(): Promise<Session | null> {
   if (cache) return cache;
   // 清理旧版明文 Token，避免明文残留
-  try {
-    localStorage.removeItem(LEGACY_KEY);
-  } catch {
-    /* ignore */
-  }
+  try { localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
   try {
     const blob =
       localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || null;
@@ -86,7 +83,7 @@ export async function initSession(): Promise<Session | null> {
       return cache;
     }
   } catch {
-    /* ignore */
+    /* 解密失败（可能是旧密钥/存储损坏），静默降级到需重新登录 */
   }
   return null;
 }
