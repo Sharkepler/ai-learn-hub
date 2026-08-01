@@ -7,7 +7,7 @@ const CFG_KEY = "aih_sync_cfg";
 const LAST_KEY = "aih_last_sync";
 
 const DEFAULT_CFG: SyncConfig = {
-  enabled: false,
+  enabled: true,
   repo: "Sharkepler/ai-learn-hub-data",
   branch: "main",
   auto: true,
@@ -32,6 +32,28 @@ export async function saveCfg(patch: Partial<SyncConfig>): Promise<SyncConfig> {
     /* ignore */
   }
   return next;
+}
+
+// 升级迁移：把上一版「默认关闭同步」导致的旧设备卡在 off 的状态修回开启。
+// 仅当配置仍是出厂默认（未自定义仓库）时才自动开启，避免覆盖用户有意的关闭。
+export function migrateSyncCfg(): void {
+  try {
+    const raw = localStorage.getItem(CFG_KEY);
+    if (!raw) {
+      saveCfg({ enabled: true });
+      return;
+    }
+    const cur = JSON.parse(raw);
+    const isFactoryDefaultOff =
+      cur &&
+      cur.enabled === false &&
+      cur.repo === DEFAULT_CFG.repo &&
+      cur.branch === DEFAULT_CFG.branch &&
+      cur.auto === true;
+    if (isFactoryDefaultOff) saveCfg({ enabled: true });
+  } catch {
+    /* ignore */
+  }
 }
 
 export function isReady(): boolean {
