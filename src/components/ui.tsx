@@ -2,8 +2,22 @@ import clsx from "clsx";
 import type { ReactNode, ButtonHTMLAttributes, HTMLAttributes } from "react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { X, Sparkle } from "@phosphor-icons/react";
+import {
+  X,
+  Sparkle,
+  TextB,
+  TextItalic,
+  TextH,
+  Quotes,
+  ListBullets,
+  ListNumbers,
+  Code,
+  Link as LinkIcon,
+  Eye,
+  PencilSimple,
+} from "@phosphor-icons/react";
 import * as ai from "../lib/ai";
+import { renderMarkdown } from "../lib/markdown";
 
 export const cn = (...a: (string | false | null | undefined)[]) =>
   clsx(...a);
@@ -160,6 +174,207 @@ export function Spinner({ className }: { className?: string }) {
         className
       )}
     />
+  );
+}
+
+// ---------- MarkdownEditor（带格式化工具栏，无需手敲语法） ----------
+type EditOp = {
+  rep: string; // 替换文本
+  rs: number; // 替换起点（value 内）
+  re: number; // 替换终点
+  sStart: number; // 新选区起点
+  sEnd: number; // 新选区终点
+};
+
+// 包裹型（粗体/斜体/代码/链接）：有选区则包裹，无选区则插入占位
+function surround(
+  before: string,
+  after: string,
+  value: string,
+  start: number,
+  end: number,
+  placeholder = "文本"
+): EditOp {
+  const sel = value.slice(start, end) || placeholder;
+  const rep = before + sel + after;
+  const sStart = start + before.length;
+  const sEnd = sStart + sel.length;
+  return { rep, rs: start, re: end, sStart, sEnd };
+}
+
+// 行首前缀型（标题/引用/列表）：对选中涉及到的每一行加前缀
+function prefixLines(
+  prefix: string,
+  value: string,
+  start: number,
+  end: number
+): EditOp {
+  const ls = value.lastIndexOf("\n", start - 1) + 1;
+  const block = value.slice(ls, end);
+  const rep = block
+    .split("\n")
+    .map((l) => (l.startsWith(prefix) ? l : prefix + l))
+    .join("\n");
+  const delta = rep.length - block.length;
+  return { rep, rs: ls, re: end, sStart: start, sEnd: end + delta };
+}
+
+export function MarkdownEditor({
+  value,
+  onChange,
+  placeholder,
+  minHeight = 100,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  minHeight?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [preview, setPreview] = useState(false);
+
+  function run(op: (v: string, s: number, e: number) => EditOp) {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const r = op(value, start, end);
+    const next = value.slice(0, r.rs) + r.rep + value.slice(r.re);
+    onChange(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(r.sStart, r.sEnd);
+    });
+  }
+
+  function insertBlock(prefix: string) {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const before = value.slice(0, start);
+    const needsNl = start > 0 && !before.endsWith("\n");
+    const rep = (needsNl ? "\n" : "") + prefix;
+    const next = before + rep + value.slice(start);
+    onChange(next);
+    const caret = before.length + rep.length;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(caret, caret);
+    });
+  }
+
+  const tools: {
+    icon: ReactNode;
+    label: string;
+    act: () => void;
+  }[] = [
+    {
+      icon: <TextB size={16} />,
+      label: "加粗（重点）",
+      act: () => run((v, s, e) => surround("**", "**", v, s, e, "重点")),
+    },
+    {
+      icon: <TextItalic size={16} />,
+      label: "斜体",
+      act: () => run((v, s, e) => surround("*", "*", v, s, e, "强调")),
+    },
+    {
+      icon: <TextH size={16} />,
+      label: "标题",
+      act: () => run((v, s, e) => prefixLines("## ", v, s, e)),
+    },
+    {
+      icon: <Quotes size={16} />,
+      label: "引用",
+      act: () => run((v, s, e) => prefixLines("> ", v, s, e)),
+    },
+    {
+      icon: <ListBullets size={16} />,
+      label: "无序列表",
+      act: () => run((v, s, e) => prefixLines("- ", v, s, e)),
+    },
+    {
+      icon: <ListNumbers size={16} />,
+      label: "有序列表",
+      act: () => run((v, s, e) => prefixLines("1. ", v, s, e)),
+    },
+    {
+      icon: <Code size={16} />,
+      label: "行内代码",
+      act: () => run((v, s, e) => surround("`", "`", v, s, e, "code")),
+    },
+    {
+      icon: <LinkIcon size={16} />,
+      label: "链接",
+      act: () =>
+        run((v, s, e) => surround("[", "](https://)", v, s, e, "链接文字")),
+    },
+    {
+      icon: <></>,
+      label: "分割线",
+      act: () => insertBlock("\n---\n"),
+    },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "rounded-[12px] border border-border bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25",
+        className
+      )}
+    >
+      {/* 工具栏 */}
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1.5 py-1.5">
+        {tools.map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            title={t.label}
+            aria-label={t.label}
+            disabled={preview}
+            onClick={t.act}
+            className="grid h-8 w-8 place-items-center rounded-md text-text-2 transition hover:bg-surface-2 hover:text-accent disabled:opacity-40"
+          >
+            {t.icon}
+          </button>
+        ))}
+        <button
+          type="button"
+          title={preview ? "返回编辑" : "预览效果"}
+          aria-label={preview ? "返回编辑" : "预览效果"}
+          onClick={() => setPreview((p) => !p)}
+          className={cn(
+            "ml-auto grid h-8 w-8 place-items-center rounded-md transition",
+            preview
+              ? "bg-accent-soft text-accent"
+              : "text-text-2 hover:bg-surface-2 hover:text-accent"
+          )}
+        >
+          {preview ? <PencilSimple size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+
+      {/* 编辑区 / 预览区 */}
+      {preview ? (
+        <div
+          className="md max-h-[50vh] overflow-auto px-3.5 py-2.5 font-serif text-[15px] leading-relaxed"
+          dangerouslySetInnerHTML={{
+            __html: renderMarkdown(value || "*（空）*"),
+          }}
+        />
+      ) : (
+        <textarea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ minHeight }}
+          className="block w-full resize-y bg-transparent px-3.5 py-2.5 font-serif text-[15px] leading-relaxed text-text outline-none placeholder:text-text-2/70"
+        />
+      )}
+    </div>
   );
 }
 

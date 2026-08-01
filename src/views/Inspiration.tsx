@@ -22,6 +22,7 @@ import {
   Lightbox,
   AiPanel,
   ConfirmDialog,
+  MarkdownEditor,
   type AiKind,
 } from "../components/ui";
 import DayFilter from "../components/DayFilter";
@@ -48,7 +49,6 @@ export default function Inspiration() {
   const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pendingDel, setPendingDel] = useState<InspirationItem | null>(null);
-  const [qcPreview, setQcPreview] = useState(false);
 
   function askDelete(id: string) {
     const it = items.find((i) => i.id === id);
@@ -125,31 +125,17 @@ export default function Inspiration() {
             </button>
           )}
         </div>
-        <textarea
-          className={inputCls + " min-h-[64px] resize-none"}
-          placeholder="此刻的想法… 用 #标签 分类，支持 Markdown 标注重点"
+        <MarkdownEditor
           value={quick}
-          onChange={(e) => setQuick(e.target.value)}
+          onChange={setQuick}
+          placeholder="此刻的想法… 用 #标签 分类，支持 Markdown 标注重点"
+          minHeight={64}
         />
-        <div className="mt-2 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setQcPreview((p) => !p)}
-            className="text-xs font-medium text-text-2 transition hover:text-accent"
-            disabled={!quick.trim()}
-          >
-            {qcPreview ? "返回编辑" : "预览 Markdown"}
-          </button>
+        <div className="mt-2 flex justify-end">
           <Button onClick={quickAdd} disabled={!quick.trim()}>
             <Plus size={16} /> 记录
           </Button>
         </div>
-        {qcPreview && quick.trim() && (
-          <div
-            className="md mt-2 rounded-[12px] border border-border bg-surface p-3 text-[15px] leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(quick) }}
-          />
-        )}
       </Card>
 
       <DayFilter value={day} onChange={setDay} />
@@ -347,11 +333,9 @@ function InspirationDetail({
   const [current, setCurrent] = useState(item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.text);
-  const [preview, setPreview] = useState(false);
 
   function startEdit() {
     setDraft(current.text);
-    setPreview(false);
     setEditing(true);
   }
   async function saveEdit() {
@@ -373,31 +357,12 @@ function InspirationDetail({
     <Modal open onClose={onClose} title="灵感详情">
       <div className="space-y-4">
         {editing ? (
-          <div className="space-y-2">
-            {preview ? (
-              <div
-                className="md font-serif text-[15px] leading-relaxed min-h-[8rem] rounded-[12px] border border-border bg-surface p-3"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(draft) }}
-              />
-            ) : (
-              <textarea
-                className={
-                  inputCls +
-                  " min-h-[8rem] resize-y font-serif text-[15px] leading-relaxed"
-                }
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="支持 Markdown：**重点** # 标题 > 引用 - 列表 `代码`"
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => setPreview((p) => !p)}
-              className="text-xs font-medium text-text-2 transition hover:text-accent"
-            >
-              {preview ? "返回编辑" : "预览 Markdown"}
-            </button>
-          </div>
+          <MarkdownEditor
+            value={draft}
+            onChange={setDraft}
+            placeholder="支持 Markdown：**重点** # 标题 > 引用 - 列表 `代码`"
+            minHeight={128}
+          />
         ) : (
           <div
             className="md font-serif text-[15px] leading-relaxed"
@@ -508,7 +473,6 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
   const [text, setText] = useState("");
   const [tagsRaw, setTagsRaw] = useState("");
   const [img, setImg] = useState<string | undefined>();
-  const [preview, setPreview] = useState(false);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -560,32 +524,13 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="新灵感">
-        <Field
-          label="内容"
-          hint={
-            <button
-              type="button"
-              onClick={() => setPreview((p) => !p)}
-              className="text-xs font-medium text-text-2 transition hover:text-accent"
-              disabled={!text.trim()}
-            >
-              {preview ? "返回编辑" : "预览 Markdown"}
-            </button>
-          }
-        >
-          {preview ? (
-            <div
-              className="md min-h-[100px] rounded-[12px] border border-border bg-surface p-3 text-[15px] leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-            />
-          ) : (
-            <textarea
-              className={inputCls + " min-h-[100px] resize-none"}
-              placeholder="写下你的灵感… 支持 Markdown：**重点** # 标题 > 引用 - 列表"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          )}
+        <Field label="内容">
+          <MarkdownEditor
+            value={text}
+            onChange={setText}
+            placeholder="写下你的灵感… 支持 Markdown：**重点** # 标题 > 引用 - 列表"
+            minHeight={100}
+          />
         </Field>
         <Field label="标签（逗号分隔，或从正文提取 #标签）" hint="正文里的 #话题 会自动提取">
           <input
