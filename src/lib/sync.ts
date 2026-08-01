@@ -73,6 +73,15 @@ function toB64(str: string): string {
   return btoa(bin);
 }
 
+// atob 的逆操作：base64 → Uint8Array → TextDecoder 正确还原 UTF-8 多字节字符。
+// 不用这个的话，中文等非 ASCII 字符在 atob→JSON.parse 链路中会变成乱码。
+function fromB64(b64: string): string {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 async function gh(path: string, token: string, init: RequestInit = {}) {
   const res = await fetch(`https://api.github.com${path}`, {
     ...init,
@@ -113,7 +122,7 @@ async function getDayFile(
   if (res.status === 404) return { items: [], sha: null };
   const data = await res.json();
   try {
-    const items = JSON.parse(atob(data.content))?.items || [];
+    const items = JSON.parse(fromB64(data.content))?.items || [];
     return { items, sha: data.sha };
   } catch {
     return { items: [], sha: data.sha || null };
