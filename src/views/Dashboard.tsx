@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { ChartLineUp, Fire, Clock, Lightbulb, Calculator } from "@phosphor-icons/react";
+import { ChartLineUp, Fire, Clock, Lightbulb, Calculator, Books } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { Card, EmptyState, Reveal, Button } from "../components/ui";
 import AssetCalculator from "../components/AssetCalculator";
+import MediaLog from "../components/MediaLog";
 import type { Item, InspirationItem, LearningItem } from "../lib/types";
 import { dayList, ymd, fmtDur, fmtDate } from "../lib/util";
 
@@ -12,6 +13,7 @@ export default function Dashboard() {
 
   const m = useMemo(() => compute(active), [active]);
   const [showCalc, setShowCalc] = useState(false);
+  const [showMedia, setShowMedia] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -26,6 +28,22 @@ export default function Dashboard() {
             <p className="text-sm text-text-2">算算每件物品陪了你多少天、日均多少钱</p>
           </div>
           <Button variant="ghost" className="ml-auto" onClick={() => setShowCalc(true)}>
+            打开
+          </Button>
+        </div>
+      </Card>
+
+      {/* 读书影视记录入口 */}
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent">
+            <Books size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight">读书影视记录</p>
+            <p className="text-sm text-text-2">记书影游，标进度与评分，告别片单混乱</p>
+          </div>
+          <Button variant="ghost" className="ml-auto" onClick={() => setShowMedia(true)}>
             打开
           </Button>
         </div>
@@ -137,6 +155,8 @@ export default function Dashboard() {
       )}
 
       {showCalc && <AssetCalculator onClose={() => setShowCalc(false)} />}
+
+      {showMedia && <MediaLog onClose={() => setShowMedia(false)} />}
     </div>
   );
 }
