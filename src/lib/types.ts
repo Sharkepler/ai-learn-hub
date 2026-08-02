@@ -21,7 +21,7 @@ export interface InspirationItem extends BaseItem {
   kind: "inspiration";
   text: string;
   tags: string[];
-  mediaType: "text" | "voice" | "image";
+  mediaType: "text" | "image";
   media?: string; // data url or remote url
   note: string;
 }

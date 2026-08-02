@@ -1,7 +1,9 @@
 // AI assist via LongCat (OpenAI-compatible chat completions).
+// 安全：API Key 不再硬编码，改为用户在「设置 → AI 配置」中填写，加密存储于本机。
+import { loadAiKey } from "./crypto";
+
 const ENDPOINT = "https://api.longcat.chat/openai/v1/chat/completions";
 const MODEL = "LongCat-2.0";
-const API_KEY = "ak_2kH3nu92L4a77hd6On7ch1Ys6Xu29";
 
 export interface Msg {
   role: "system" | "user" | "assistant";
@@ -12,6 +14,12 @@ export async function complete(
   messages: Msg[],
   opts: { signal?: AbortSignal } = {}
 ): Promise<string> {
+  const API_KEY = await loadAiKey();
+  if (!API_KEY) {
+    throw new Error(
+      "未配置 AI Key，请在「设置 → AI 配置」中填写你的 LongCat API Key"
+    );
+  }
   const res = await fetch(ENDPOINT, {
     method: "POST",
     signal: opts.signal,
@@ -77,15 +85,3 @@ export function resources(text: string, signal?: AbortSignal) {
 
 }
 
-export function relate(items: { text: string; tags: string[] }[]) {
-  const list = items
-    .map((i, idx) => `${idx + 1}. ${i.text.slice(0, 60)} ${i.tags.map((t) => "#" + t).join(" ")}`)
-    .join("\n");
-  return complete([
-    { role: "system", content: SYS },
-    {
-      role: "user",
-      content: `下面是用户最近的一些灵感，找出它们之间可能的关联，给出 2-3 条联想建议：\n\n${list}`,
-    },
-  ]);
-}

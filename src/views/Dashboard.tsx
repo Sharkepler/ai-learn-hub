@@ -1,7 +1,8 @@
-import { useMemo } from "react";
-import { ChartLineUp, Fire, Clock, Lightbulb } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
+import { ChartLineUp, Fire, Clock, Lightbulb, Calculator } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
-import { Card, EmptyState, Reveal } from "../components/ui";
+import { Card, EmptyState, Reveal, Button } from "../components/ui";
+import AssetCalculator from "../components/AssetCalculator";
 import type { Item, InspirationItem, LearningItem } from "../lib/types";
 import { dayList, ymd, fmtDur, fmtDate } from "../lib/util";
 
@@ -10,20 +11,35 @@ export default function Dashboard() {
   const active = items.filter((i) => !i.deleted);
 
   const m = useMemo(() => compute(active), [active]);
-
-  if (active.length === 0) {
-    return (
-      <EmptyState
-        icon={<ChartLineUp size={26} />}
-        title="数据看板空空如也"
-        desc="开始记录学习与灵感，这里会呈现你的时长、进度与坚持曲线。"
-      />
-    );
-  }
+  const [showCalc, setShowCalc] = useState(false);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      {/* 工具入口 */}
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent">
+            <Calculator size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight">资产成本计算器</p>
+            <p className="text-sm text-text-2">算算每件物品陪了你多少天、日均多少钱</p>
+          </div>
+          <Button variant="ghost" className="ml-auto" onClick={() => setShowCalc(true)}>
+            打开
+          </Button>
+        </div>
+      </Card>
+
+      {active.length === 0 ? (
+        <EmptyState
+          icon={<ChartLineUp size={26} />}
+          title="数据看板空空如也"
+          desc="开始记录学习与灵感，这里会呈现你的时长、进度与坚持曲线。"
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
         <Reveal>
           <Card>
             <div className="flex items-center gap-2 text-text-2">
@@ -117,6 +133,10 @@ export default function Dashboard() {
           </Card>
         </Reveal>
       )}
+        </>
+      )}
+
+      {showCalc && <AssetCalculator onClose={() => setShowCalc(false)} />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { ToastProvider } from "./components/Toast";
 import { StoreProvider } from "./state/store";
 import LoginGate from "./components/LoginGate";
 import AppShell from "./components/AppShell";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initSession, logout } from "./lib/auth";
 import { migrateSyncCfg } from "./lib/sync";
 import { applyTheme, getStoredTheme, watchSystem } from "./lib/theme";
@@ -55,11 +56,13 @@ export default function App() {
   return (
     <ToastProvider>
       <StoreProvider>
-        {user ? (
-          <AppShell user={user} onLogout={handleLogout} />
-        ) : (
-          <LoginGate onLogin={(u) => setUser(u)} />
-        )}
+        <ErrorBoundary>
+          {user ? (
+            <AppShell user={user} onLogout={handleLogout} />
+          ) : (
+            <LoginGate onLogin={(u) => setUser(u)} />
+          )}
+        </ErrorBoundary>
       </StoreProvider>
     </ToastProvider>
   );

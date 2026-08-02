@@ -66,15 +66,6 @@ export async function getAllItems(): Promise<Item[]> {
   });
 }
 
-export async function getItem(id: string): Promise<Item | undefined> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const r = tx(db, STORE, "readonly").get(id);
-    r.onsuccess = () => resolve(r.result as Item | undefined);
-    r.onerror = () => reject(r.error);
-  });
-}
-
 export async function getDays(): Promise<string[]> {
   const all = await getAllItems();
   return Array.from(new Set(all.map((i) => i.day))).sort().reverse();
@@ -106,9 +97,4 @@ export async function getCryptoKey(): Promise<CryptoKey | undefined> {
 
 export async function setCryptoKey(key: CryptoKey): Promise<void> {
   await setMeta("cryptoKey", key);
-}
-
-// Build an item with consistent day key for per-day cloud files.
-export function withDay<T extends { createdAt: number }>(obj: T): T & { day: string } {
-  return { ...obj, day: ymd(obj.createdAt) };
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Cloud,
   User,
@@ -6,6 +6,7 @@ import {
   Info,
   GithubLogo,
   Spinner,
+  Sparkle,
 } from "@phosphor-icons/react";
 import { Card, Button, Field, inputCls } from "../components/ui";
 import { useToast } from "../components/Toast";
@@ -14,6 +15,7 @@ import { getCfg, saveCfg, getLastSync } from "../lib/sync";
 import { applyTheme, getStoredTheme, type Theme } from "../lib/theme";
 import { fmtDateTime } from "../lib/util";
 import { useStore } from "../state/store";
+import { saveAiKey, loadAiKey } from "../lib/crypto";
 
 export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
   const toast = useToast();
@@ -22,6 +24,21 @@ export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [theme, setTheme] = useState<Theme>(getStoredTheme());
   const [saving, setSaving] = useState(false);
+  const [aiKey, setAiKey] = useState("");
+  const [aiSaved, setAiSaved] = useState(false);
+
+  useEffect(() => {
+    loadAiKey()
+      .then(setAiKey)
+      .catch(() => {});
+  }, []);
+
+  async function onSaveAiKey() {
+    await saveAiKey(aiKey.trim());
+    setAiSaved(true);
+    toast("AI Key 已保存（加密存于本机）", "ok");
+    setTimeout(() => setAiSaved(false), 2000);
+  }
 
   function pickTheme(t: Theme) {
     setTheme(t);
@@ -116,6 +133,29 @@ export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
           <Button onClick={save} disabled={saving}>
             {saving ? <Spinner /> : <GithubLogo size={16} />} 保存并同步
           </Button>
+        </div>
+      </Card>
+
+      {/* AI 配置 */}
+      <Card>
+        <div className="mb-3 flex items-center gap-2 font-semibold tracking-tight">
+          <Sparkle size={18} className="text-accent" /> AI 配置
+        </div>
+        <p className="mb-3 text-sm leading-relaxed text-text-2">
+          AI 总结 / 知识框架 / 资源推荐 需要 LongCat API Key。Key 仅加密保存在本机，仅用于调用 LongCat 接口，不会发送给任何第三方。若此前 Key 已泄露，请先在 LongCat 控制台重新生成。
+        </p>
+        <Field label="LongCat API Key" hint="在 LongCat 控制台获取；形如 ak_...">
+          <input
+            type="password"
+            className={inputCls}
+            value={aiKey}
+            onChange={(e) => setAiKey(e.target.value)}
+            placeholder="ak_..."
+          />
+        </Field>
+        <div className="mt-3 flex items-center gap-2">
+          <Button onClick={onSaveAiKey}>保存 Key</Button>
+          {aiSaved && <span className="text-sm font-medium text-accent">已保存 ✓</span>}
         </div>
       </Card>
 

@@ -3,7 +3,7 @@
 //（本次会话可用，刷新后需重登——但绝不会因加密失败阻断登录或同步）。
 // 说明：保护的是「静态存储」，不是对抗「能操作本机浏览器环境」的攻击者。
 
-import { getCryptoKey, setCryptoKey } from "./db";
+import { getCryptoKey, setCryptoKey, getMeta, setMeta } from "./db";
 
 let keyPromise: Promise<CryptoKey> | null = null;
 let fallbackKey: CryptoKey | null = null; // 内存降级密钥
@@ -110,4 +110,19 @@ export async function decryptJSON<T = any>(blob: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+// ---------- AI Key（用户自配，加密存于本机，仅用于调用 LongCat API）----------
+const AI_KEY_META = "aih_ai_key";
+
+export async function saveAiKey(plain: string): Promise<void> {
+  const blob = await encryptJSON(plain);
+  await setMeta(AI_KEY_META, blob);
+}
+
+export async function loadAiKey(): Promise<string> {
+  const blob = await getMeta<string>(AI_KEY_META);
+  if (!blob) return "";
+  const v = await decryptJSON<string>(blob);
+  return v || "";
 }

@@ -2,6 +2,7 @@ import type { Item, SyncConfig } from "./types";
 import { getAllItems, bulkPut, getMeta, setMeta } from "./db";
 import { getToken } from "./auth";
 import { ymd } from "./util";
+import { loadAssets, saveAssets, type Asset } from "./assets";
 
 const CFG_KEY = "aih_sync_cfg";
 const LAST_KEY = "aih_last_sync";
@@ -206,6 +207,13 @@ export async function pullAll(token?: string): Promise<number> {
       n += items.length;
     }
   }
+  // 拉取资产成本计算器的数据
+  try {
+    const pulled = await pullAssets(tk);
+    if (pulled) n += pulled;
+  } catch {
+    /* 资产文件可能尚不存在，忽略 */
+  }
   await setMeta(LAST_KEY, Date.now());
   return n;
 }
@@ -240,6 +248,12 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
     for (const d of days) {
       if (await pushDay(d, tk)) pushed++;
     }
+    // 同步资产成本计算器数据
+    try {
+      await pushAssets(tk);
+    } catch {
+      /* best-effort */
+    }
     await setMeta(LAST_KEY, Date.now());
     return { ok: true, pulled, pushed };
   } catch (e: any) {
@@ -247,17 +261,83 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
   }
 }
 
-// Immediate debounced push when an item changes.
-const timers: Record<string, ReturnType<typeof setTimeout>> = {};
-export function schedulePush(day: string) {
+// ---------- assets.json (资产成本计算器) ----------
+async function getAssetsFile(
+  token: string,
+  cfg: SyncConfig
+): Promise<{ assets: Asset[]; sha: string | null }> {
+  const path = `/repos/${cfg.repo}/contents/data/assets.json?ref=${cfg.branch}`;
+  const res = await gh(path, token);
+  if (res.status === 404) return { assets: [], sha: null };
+  const data = await res.json();
+  try {
+    const assets = JSON.parse(fromB64(data.content))?.assets || [];
+    return { assets, sha: data.sha };
+  } catch {
+    return { assets: [], sha: data.sha || null };
+  }
+}
+
+async function putAssetsFile(
+  assets: Asset[],
+  token: string,
+  cfg: SyncConfig,
+  sha: string | null
+): Promise<string> {
+  const content = toB64(JSON.stringify({ assets }, null, 0));
+  const path = `/repos/${cfg.repo}/contents/data/assets.json`;
+  const body: any = {
+    message: "sync assets",
+    content,
+    branch: cfg.branch,
+  };
+  if (sha) body.sha = sha;
+  const res = await gh(path, token, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  return data.content?.sha || sha || "";
+}
+
+// 同 id 以本地为准（last-write-wins 的简化：本地覆盖远程）
+function mergeAssets(local: Asset[], remote: Asset[]): Asset[] {
+  const map = new Map<string, Asset>();
+  remote.forEach((a) => map.set(a.id, a));
+  local.forEach((a) => map.set(a.id, a));
+  return Array.from(map.values());
+}
+
+export async function pushAssets(token?: string): Promise<boolean> {
+  const tk = token || getToken();
   const cfg = getCfg();
-  if (!cfg.enabled || !cfg.auto || !getToken()) return;
-  if (timers[day]) clearTimeout(timers[day]);
-  timers[day] = setTimeout(() => {
-    pushDay(day).catch(() => {
-      /* best-effort; full sync can retry later */
-    });
-  }, 800);
+  if (!tk || !cfg.enabled) return false;
+  const local = await loadAssets();
+  let attempts = 0;
+  while (attempts < 5) {
+    attempts++;
+    const { assets: remote, sha } = await getAssetsFile(tk, cfg);
+    const merged = mergeAssets(local, remote);
+    try {
+      await putAssetsFile(merged, tk, cfg, sha);
+      return true;
+    } catch (e: any) {
+      if (e?.status === 409) continue; // conflict: re-pull + retry
+      throw e;
+    }
+  }
+  throw new Error("资产同步冲突重试次数过多");
+}
+
+export async function pullAssets(token?: string): Promise<number> {
+  const tk = token || getToken();
+  const cfg = getCfg();
+  if (!tk || !cfg.enabled) return 0;
+  const { assets } = await getAssetsFile(tk, cfg);
+  if (!assets.length) return 0;
+  await saveAssets(assets); // 写回本地（加密）
+  return assets.length;
 }
 
 export { ymd };
