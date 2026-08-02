@@ -2,7 +2,13 @@ import type { Item, SyncConfig } from "./types";
 import { getAllItems, bulkPut, getMeta, setMeta } from "./db";
 import { getToken } from "./auth";
 import { ymd } from "./util";
-import { loadAssets, saveAssets, type Asset } from "./assets";
+import {
+  loadAssetsRaw,
+  saveAssetsRaw,
+  mergeAssetsLWW,
+  notifyAssetsChanged,
+  type Asset,
+} from "./assets";
 
 const CFG_KEY = "aih_sync_cfg";
 const LAST_KEY = "aih_last_sync";
@@ -211,6 +217,7 @@ export async function pullAll(token?: string): Promise<number> {
   try {
     const pulled = await pullAssets(tk);
     if (pulled) n += pulled;
+    // pullAssets 内部已合并+落盘+通知；这里仅累计计数
   } catch {
     /* 资产文件可能尚不存在，忽略 */
   }
@@ -254,6 +261,7 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
     } catch {
       /* best-effort */
     }
+    notifyAssetsChanged();
     await setMeta(LAST_KEY, Date.now());
     return { ok: true, pulled, pushed };
   } catch (e: any) {
@@ -301,24 +309,34 @@ async function putAssetsFile(
   return data.content?.sha || sha || "";
 }
 
-// 同 id 以本地为准（last-write-wins 的简化：本地覆盖远程）
-function mergeAssets(local: Asset[], remote: Asset[]): Asset[] {
-  const map = new Map<string, Asset>();
-  remote.forEach((a) => map.set(a.id, a));
-  local.forEach((a) => map.set(a.id, a));
-  return Array.from(map.values());
+// 判断合并前后本地是否有变化（用于决定是否落盘 + 通知 UI）
+function hasAssetChange(local: Asset[], merged: Asset[]): boolean {
+  if (local.length !== merged.length) return true;
+  const lm = new Map(local.map((a) => [a.id, a]));
+  for (const m of merged) {
+    const l = lm.get(m.id);
+    if (!l) return true;
+    if (
+      l.updatedAt !== m.updatedAt ||
+      !!l.deleted !== !!m.deleted ||
+      l.name !== m.name ||
+      l.price !== m.price
+    )
+      return true;
+  }
+  return false;
 }
 
 export async function pushAssets(token?: string): Promise<boolean> {
   const tk = token || getToken();
   const cfg = getCfg();
   if (!tk || !cfg.enabled) return false;
-  const local = await loadAssets();
+  const local = await loadAssetsRaw();
   let attempts = 0;
   while (attempts < 5) {
     attempts++;
     const { assets: remote, sha } = await getAssetsFile(tk, cfg);
-    const merged = mergeAssets(local, remote);
+    const merged = mergeAssetsLWW(local, remote);
     try {
       await putAssetsFile(merged, tk, cfg, sha);
       return true;
@@ -334,10 +352,35 @@ export async function pullAssets(token?: string): Promise<number> {
   const tk = token || getToken();
   const cfg = getCfg();
   if (!tk || !cfg.enabled) return 0;
-  const { assets } = await getAssetsFile(tk, cfg);
-  if (!assets.length) return 0;
-  await saveAssets(assets); // 写回本地（加密）
-  return assets.length;
+  const { assets: remote } = await getAssetsFile(tk, cfg);
+  if (!remote.length) return 0;
+  const local = await loadAssetsRaw();
+  const merged = mergeAssetsLWW(local, remote);
+  if (hasAssetChange(local, merged)) {
+    await saveAssetsRaw(merged); // 合并后写回本地（加密）
+    notifyAssetsChanged();
+  }
+  return merged.length;
+}
+
+// 静默轮询：仅拉取云端资产并合并，有变化才落盘 + 通知。
+// 用于「准实时」跨设备一致，不弹遮罩、不打扰用户。
+export async function pollAssets(token?: string): Promise<boolean> {
+  const tk = token || getToken();
+  const cfg = getCfg();
+  if (!tk || !cfg.enabled) return false;
+  try {
+    const { assets: remote } = await getAssetsFile(tk, cfg);
+    const local = await loadAssetsRaw();
+    const merged = mergeAssetsLWW(local, remote);
+    if (hasAssetChange(local, merged)) {
+      await saveAssetsRaw(merged);
+      notifyAssetsChanged();
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export { ymd };

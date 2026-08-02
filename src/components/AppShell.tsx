@@ -11,7 +11,7 @@ import SearchModal from "./SearchModal";
 import { useStore, syncNow } from "../state/store";
 import { applyTheme, isDarkNow } from "../lib/theme";
 import { getToken } from "../lib/auth";
-import { getCfg, pullAll } from "../lib/sync";
+import { getCfg, pullAll, pollAssets } from "../lib/sync";
 import type { GithubUser, Item } from "../lib/types";
 import { useToast } from "./Toast";
 
@@ -47,6 +47,28 @@ export default function AppShell({
         .catch(() => {})
         .finally(() => setSyncing(false));
     }
+    // 仅在挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 跨设备「准实时」一致：标签页可见时每 60s 静默拉取资产并合并；
+  // 切回前台时也立刻拉一次。不弹遮罩、不打扰，有变化才通知 UI 刷新。
+  useEffect(() => {
+    const enabled = () => getCfg().enabled && !!getToken();
+    const tick = () => {
+      if (document.visibilityState === "visible" && enabled()) {
+        pollAssets().catch(() => {});
+      }
+    };
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    const timer = setInterval(tick, 60000);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
     // 仅在挂载时执行一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
