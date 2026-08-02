@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { ChartLineUp, Fire, Clock, Lightbulb, Calculator, Books } from "@phosphor-icons/react";
+import { ChartLineUp, Fire, Clock, Lightbulb, Calculator, Books, CalendarBlank, Smiley } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { Card, EmptyState, Reveal, Button } from "../components/ui";
 import AssetCalculator from "../components/AssetCalculator";
 import MediaLog from "../components/MediaLog";
+import MonthlyReview from "../components/MonthlyReview";
+import MoodLog from "../components/MoodLog";
 import type { Item, InspirationItem, LearningItem } from "../lib/types";
 import { dayList, ymd, fmtDur, fmtDate } from "../lib/util";
 
@@ -14,6 +16,8 @@ export default function Dashboard() {
   const m = useMemo(() => compute(active), [active]);
   const [showCalc, setShowCalc] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [showMood, setShowMood] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -44,6 +48,38 @@ export default function Dashboard() {
             <p className="text-sm text-text-2">记书影游，标进度与评分，告别片单混乱</p>
           </div>
           <Button variant="ghost" className="ml-auto" onClick={() => setShowMedia(true)}>
+            打开
+          </Button>
+        </div>
+      </Card>
+
+      {/* 月度复盘入口 */}
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent">
+            <CalendarBlank size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight">月度复盘</p>
+            <p className="text-sm text-text-2">每月记高光与不足，让成长有迹可循</p>
+          </div>
+          <Button variant="ghost" className="ml-auto" onClick={() => setShowReview(true)}>
+            打开
+          </Button>
+        </div>
+      </Card>
+
+      {/* 心情 / 精力日记入口 */}
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent">
+            <Smiley size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight">心情 / 精力日记</p>
+            <p className="text-sm text-text-2">每天记情绪与精力，看清自己的波动</p>
+          </div>
+          <Button variant="ghost" className="ml-auto" onClick={() => setShowMood(true)}>
             打开
           </Button>
         </div>
@@ -157,6 +193,10 @@ export default function Dashboard() {
       {showCalc && <AssetCalculator onClose={() => setShowCalc(false)} />}
 
       {showMedia && <MediaLog onClose={() => setShowMedia(false)} />}
+
+      {showReview && <MonthlyReview onClose={() => setShowReview(false)} />}
+
+      {showMood && <MoodLog onClose={() => setShowMood(false)} />}
     </div>
   );
 }
