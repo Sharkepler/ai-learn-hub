@@ -14,7 +14,6 @@ import { getUser, logout } from "../lib/auth";
 import { getCfg, saveCfg, getLastSync } from "../lib/sync";
 import { applyTheme, getStoredTheme, type Theme } from "../lib/theme";
 import { fmtDateTime } from "../lib/util";
-import { useStore } from "../state/store";
 import { saveAiKey, loadAiKey } from "../lib/crypto";
 
 export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
@@ -142,7 +141,9 @@ export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
           <Sparkle size={18} className="text-accent" /> AI 配置
         </div>
         <p className="mb-3 text-sm leading-relaxed text-text-2">
-          AI 总结 / 知识框架 / 资源推荐 需要 LongCat API Key。Key 仅加密保存在本机，仅用于调用 LongCat 接口，不会发送给任何第三方。若此前 Key 已泄露，请先在 LongCat 控制台重新生成。
+          AI 总结 / 知识框架 / 资源推荐 需要 LongCat API Key。Key
+          仅加密保存在本机，仅用于调用 LongCat 接口，不会发送给任何第三方。若此前 Key
+          已泄露，请先在 LongCat 控制台重新生成。
         </p>
         <Field label="LongCat API Key" hint="在 LongCat 控制台获取；形如 ak_...">
           <input
@@ -188,7 +189,8 @@ export default function Settings({ onSyncNow }: { onSyncNow: () => void }) {
           <Info size={18} className="text-accent" /> 关于
         </div>
         <p className="text-sm leading-relaxed text-text-2">
-          智学 · 个人 AI 学习与灵感管理工具。学习追踪、灵感记录、AI 辅助、数据看板，数据存于本机与你的私有仓库，跨设备同步。
+          智学 · 个人 AI 学习与灵感管理工具。学习追踪、灵感记录、AI
+          辅助、数据看板，数据存于本机与你的私有仓库，跨设备同步。
         </p>
         <p className="mt-2 text-xs text-text-2">v2.0 · React + Tailwind v4</p>
       </Card>

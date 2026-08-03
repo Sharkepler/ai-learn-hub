@@ -1,13 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  ListChecks,
-  Trash,
-  Pencil,
-  X,
-  Spinner,
-  ArrowRight,
-} from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { Plus, ListChecks, Trash, Pencil, ArrowRight } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { useToast } from "../components/Toast";
 import {
@@ -40,9 +32,10 @@ export default function Learning({
   const { items, addItem, updateItem, removeItem, reload } = useStore();
   const toast = useToast();
   const [day, setDay] = useState<string | null>(null);
-  const [modal, setModal] = useState<{ open: boolean; edit: LearningItem | null }>(
-    { open: false, edit: null }
-  );
+  const [modal, setModal] = useState<{ open: boolean; edit: LearningItem | null }>({
+    open: false,
+    edit: null,
+  });
   const [detail, setDetail] = useState<LearningItem | null>(null);
   const [pendingDel, setPendingDel] = useState<LearningItem | null>(null);
   const [limit, setLimit] = useState(PAGE);
@@ -81,7 +74,6 @@ export default function Learning({
         onConsumeFocus?.();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId]);
 
   return (
@@ -150,10 +142,7 @@ export default function Learning({
             const synced = await (modal.edit ? updateItem(item) : addItem(item));
             setModal({ open: false, edit: null });
             if (synced)
-              toast(
-                modal.edit ? "学习记录已更新 ✅" : "学习记录已保存 ✅",
-                "ok"
-              );
+              toast(modal.edit ? "学习记录已更新 ✅" : "学习记录已保存 ✅", "ok");
             else toast("已保存到本地（未同步）", "info");
           }}
         />
@@ -183,7 +172,7 @@ export default function Learning({
             setPendingDel(null);
             toast(
               synced ? "已删除（已同步）" : "已删除（本地标记）",
-              synced ? "ok" : "info"
+              synced ? "ok" : "info",
             );
           }}
           onCancel={() => setPendingDel(null)}
@@ -280,7 +269,7 @@ function LearningCard({
             <Pencil size={16} />
           </button>
           <button
-          onClick={() => onRemove(item.id)}
+            onClick={() => onRemove(item.id)}
             className="rounded-full p-1.5 text-text-2 transition hover:bg-red-500/10 hover:text-red-500"
           >
             <Trash size={16} />
@@ -323,8 +312,7 @@ function LearningDetail({
 
         <p className="text-xs text-text-2">
           创建：{fmtDateTime(item.createdAt)}
-          {item.updatedAt !== item.createdAt &&
-            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+          {item.updatedAt !== item.createdAt && ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
 
         {/* 三合一 AI 面板：打开即自动调用，可切换 总结 / 知识框架 / 资源推荐 */}
@@ -334,10 +322,7 @@ function LearningDetail({
           <Button variant="ghost" onClick={onEdit}>
             <Pencil size={16} /> 编辑
           </Button>
-          <Button
-            variant="danger"
-          onClick={() => onRemove(item.id)}
-          >
+          <Button variant="danger" onClick={() => onRemove(item.id)}>
             <Trash size={16} /> 删除
           </Button>
         </div>
@@ -360,7 +345,7 @@ function LearningForm({
   const [progress, setProgress] = useState(edit?.progress || 0);
   const [note, setNote] = useState(edit?.note || "");
   const [custom, setCustom] = useState(
-    edit ? (!TOPICS.includes(edit.topic) ? edit.topic : "") : ""
+    edit ? (!TOPICS.includes(edit.topic) ? edit.topic : "") : "",
   );
 
   function save() {

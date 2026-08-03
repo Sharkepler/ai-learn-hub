@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { ChartLineUp, Fire, Clock, Lightbulb, Calculator, Books, CalendarBlank, Smiley } from "@phosphor-icons/react";
+import {
+  ChartLineUp,
+  Fire,
+  Clock,
+  Lightbulb,
+  Calculator,
+  Books,
+  CalendarBlank,
+  Smiley,
+} from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import { Card, EmptyState, Reveal, Button } from "../components/ui";
 import AssetCalculator from "../components/AssetCalculator";
@@ -94,99 +103,95 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3">
-        <Reveal>
-          <Card>
-            <div className="flex items-center gap-2 text-text-2">
-              <Clock size={16} className="text-accent" /> 累计学习
-            </div>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight">
-              {fmtDur(m.totalMin)}
-            </p>
-          </Card>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <Card>
-            <div className="flex items-center gap-2 text-text-2">
-              <Fire size={16} className="text-accent" /> 连续坚持
-            </div>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight">
-              {m.streak} <span className="text-base font-medium">天</span>
-            </p>
-          </Card>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <Card>
-            <div className="flex items-center gap-2 text-text-2">
-              <Lightbulb size={16} className="text-accent" /> 灵感
-            </div>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight">
-              {m.inspCount}
-            </p>
-          </Card>
-        </Reveal>
-        <Reveal delay={0.15}>
-          <Card>
-            <div className="flex items-center gap-2 text-text-2">
-              <ChartLineUp size={16} className="text-accent" /> 本周时长
-            </div>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight">
-              {fmtDur(m.weekMin)}
-            </p>
-            <p className="mt-0.5 text-xs text-text-2">
-              上周 {fmtDur(m.lastWeekMin)}
-            </p>
-          </Card>
-        </Reveal>
-      </div>
-
-      <Reveal>
-        <Card>
-          <p className="mb-3 font-semibold tracking-tight">近 14 天活跃度</p>
-          <Bars data={m.daily} />
-        </Card>
-      </Reveal>
-
-      {m.topics.length > 0 && (
-        <Reveal>
-          <Card>
-            <p className="mb-3 font-semibold tracking-tight">学习主题分布</p>
-            <div className="space-y-2.5">
-              {m.topics.map((t) => (
-                <div key={t.name}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span>{t.name}</span>
-                    <span className="text-text-2">{fmtDur(t.min)}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${t.pct}%` }}
-                    />
-                  </div>
+            <Reveal>
+              <Card>
+                <div className="flex items-center gap-2 text-text-2">
+                  <Clock size={16} className="text-accent" /> 累计学习
                 </div>
-              ))}
-            </div>
-          </Card>
-        </Reveal>
-      )}
+                <p className="mt-1.5 text-2xl font-bold tracking-tight">
+                  {fmtDur(m.totalMin)}
+                </p>
+              </Card>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <Card>
+                <div className="flex items-center gap-2 text-text-2">
+                  <Fire size={16} className="text-accent" /> 连续坚持
+                </div>
+                <p className="mt-1.5 text-2xl font-bold tracking-tight">
+                  {m.streak} <span className="text-base font-medium">天</span>
+                </p>
+              </Card>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <Card>
+                <div className="flex items-center gap-2 text-text-2">
+                  <Lightbulb size={16} className="text-accent" /> 灵感
+                </div>
+                <p className="mt-1.5 text-2xl font-bold tracking-tight">{m.inspCount}</p>
+              </Card>
+            </Reveal>
+            <Reveal delay={0.15}>
+              <Card>
+                <div className="flex items-center gap-2 text-text-2">
+                  <ChartLineUp size={16} className="text-accent" /> 本周时长
+                </div>
+                <p className="mt-1.5 text-2xl font-bold tracking-tight">
+                  {fmtDur(m.weekMin)}
+                </p>
+                <p className="mt-0.5 text-xs text-text-2">上周 {fmtDur(m.lastWeekMin)}</p>
+              </Card>
+            </Reveal>
+          </div>
 
-      {m.topTags.length > 0 && (
-        <Reveal>
-          <Card>
-            <p className="mb-3 font-semibold tracking-tight">高频标签</p>
-            <div className="flex flex-wrap gap-2">
-              {m.topTags.map((t) => (
-                <span
-                  key={t.name}
-                  className="rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent"
-                >
-                  #{t.name} {t.count}
-                </span>
-              ))}
-            </div>
-          </Card>
-        </Reveal>
-      )}
+          <Reveal>
+            <Card>
+              <p className="mb-3 font-semibold tracking-tight">近 14 天活跃度</p>
+              <Bars data={m.daily} />
+            </Card>
+          </Reveal>
+
+          {m.topics.length > 0 && (
+            <Reveal>
+              <Card>
+                <p className="mb-3 font-semibold tracking-tight">学习主题分布</p>
+                <div className="space-y-2.5">
+                  {m.topics.map((t) => (
+                    <div key={t.name}>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span>{t.name}</span>
+                        <span className="text-text-2">{fmtDur(t.min)}</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+                        <div
+                          className="h-full rounded-full bg-accent"
+                          style={{ width: `${t.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </Reveal>
+          )}
+
+          {m.topTags.length > 0 && (
+            <Reveal>
+              <Card>
+                <p className="mb-3 font-semibold tracking-tight">高频标签</p>
+                <div className="flex flex-wrap gap-2">
+                  {m.topTags.map((t) => (
+                    <span
+                      key={t.name}
+                      className="rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent"
+                    >
+                      #{t.name} {t.count}
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            </Reveal>
+          )}
         </>
       )}
 
@@ -236,10 +241,10 @@ function compute(active: Item[]) {
   let streak = 0;
   const daySet = new Set(active.map((i) => i.day));
   const todayKey = ymd();
-  let cursor = daySet.has(todayKey) ? todayKey : [...daySet].sort().reverse()[0];
+  const cursor = daySet.has(todayKey) ? todayKey : [...daySet].sort().reverse()[0];
   if (cursor) {
     // walk backwards while days are consecutive
-    let d = new Date(cursor);
+    const d = new Date(cursor);
     while (daySet.has(ymd(d))) {
       streak++;
       d.setDate(d.getDate() - 1);

@@ -48,7 +48,6 @@ export default function AppShell({
         .finally(() => setSyncing(false));
     }
     // 仅在挂载时执行一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 跨设备「准实时」一致：标签页可见时每 60s 静默拉取资产并合并；
@@ -70,7 +69,6 @@ export default function AppShell({
       document.removeEventListener("visibilitychange", onVis);
     };
     // 仅在挂载时执行一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toggleTheme() {
@@ -92,8 +90,7 @@ export default function AppShell({
   }
 
   // 同步遮罩文案
-  const syncLabel =
-    syncing ? "正在同步数据…" : undefined;
+  const syncLabel = syncing ? "正在同步数据…" : undefined;
 
   return (
     <div className="relative min-h-[100dvh]">
@@ -108,7 +105,11 @@ export default function AppShell({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg/70 backdrop-blur-sm"
           >
-            <CloudArrowUp size={40} className="animate-spin text-accent" style={{ animationDuration: "1.2s" }} />
+            <CloudArrowUp
+              size={40}
+              className="animate-spin text-accent"
+              style={{ animationDuration: "1.2s" }}
+            />
             <p className="mt-3 text-sm font-medium text-text-2">{syncLabel}</p>
           </motion.div>
         )}

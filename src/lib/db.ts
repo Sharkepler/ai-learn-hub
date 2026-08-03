@@ -1,5 +1,4 @@
 import type { Item } from "./types";
-import { ymd } from "./util";
 
 const DB_NAME = "ai-learn-hub";
 // v2: 确保 meta store 一定存在（v1 的旧库可能缺失 meta，导致 NotFoundError）
@@ -68,7 +67,9 @@ export async function getAllItems(): Promise<Item[]> {
 
 export async function getDays(): Promise<string[]> {
   const all = await getAllItems();
-  return Array.from(new Set(all.map((i) => i.day))).sort().reverse();
+  return Array.from(new Set(all.map((i) => i.day)))
+    .sort()
+    .reverse();
 }
 
 export async function getMeta<T = any>(key: string): Promise<T | undefined> {

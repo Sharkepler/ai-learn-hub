@@ -28,7 +28,7 @@ async function getKey(): Promise<CryptoKey> {
       const nk = await crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
         false,
-        ["encrypt", "decrypt"]
+        ["encrypt", "decrypt"],
       );
       try {
         await setCryptoKey(nk);
@@ -41,11 +41,10 @@ async function getKey(): Promise<CryptoKey> {
     }
 
     // 策略3：纯内存降级——生成固定种子的密钥（不持久化，刷新后失效）
-    const fk = await crypto.subtle.generateKey(
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"]
-    );
+    const fk = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, [
+      "encrypt",
+      "decrypt",
+    ]);
     fallbackKey = fk; // 挂在模块级变量上，本次会话复用
     return fk;
   })();
@@ -104,7 +103,7 @@ export async function decryptJSON<T = any>(blob: string): Promise<T | null> {
     const pt = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: new Uint8Array(b64ToBuf(iv)) },
       key,
-      b64ToBuf(ct)
+      b64ToBuf(ct),
     );
     return JSON.parse(new TextDecoder().decode(pt)) as T;
   } catch {

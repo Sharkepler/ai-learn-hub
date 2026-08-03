@@ -14,14 +14,7 @@ import {
   cn,
 } from "./ui";
 import { renderMarkdown } from "../lib/markdown";
-import {
-  loadMoods,
-  saveMoods,
-  newMood,
-  moodOf,
-  MOODS,
-  type MoodItem,
-} from "../lib/mood";
+import { loadMoods, saveMoods, newMood, moodOf, MOODS, type MoodItem } from "../lib/mood";
 import { dayList, fmtDate, fmtDateTime } from "../lib/util";
 
 export default function MoodLog({ onClose }: { onClose: () => void }) {
@@ -67,9 +60,7 @@ export default function MoodLog({ onClose }: { onClose: () => void }) {
     const days = dayList(14);
     return days.map((d) => {
       const recs = items.filter((i) => i.day === d);
-      const avg = recs.length
-        ? recs.reduce((a, i) => a + i.energy, 0) / recs.length
-        : 0;
+      const avg = recs.length ? recs.reduce((a, i) => a + i.energy, 0) / recs.length : 0;
       return { day: d, avg };
     });
   }, [items]);
@@ -114,10 +105,10 @@ export default function MoodLog({ onClose }: { onClose: () => void }) {
                   t.avg >= 4
                     ? "bg-emerald-500/80"
                     : t.avg >= 3
-                    ? "bg-amber-500/80"
-                    : t.avg > 0
-                    ? "bg-red-500/70"
-                    : "bg-surface-2";
+                      ? "bg-amber-500/80"
+                      : t.avg > 0
+                        ? "bg-red-500/70"
+                        : "bg-surface-2";
                 return (
                   <div
                     key={t.day}
@@ -322,8 +313,7 @@ function MoodDetail({
 
         <p className="text-xs text-text-2">
           创建：{fmtDateTime(item.createdAt)}
-          {item.updatedAt !== item.createdAt &&
-            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+          {item.updatedAt !== item.createdAt && ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
 
         <AiPanel source={moodSource(item)} />
@@ -369,7 +359,7 @@ function MoodForm({
         day: day.trim(),
         createdAt: edit?.createdAt || now,
         updatedAt: now,
-      })
+      }),
     );
   }
 
@@ -386,7 +376,7 @@ function MoodForm({
                 "grid h-11 w-11 place-items-center rounded-full text-xl transition",
                 mood === m.key
                   ? "bg-accent text-white"
-                  : "bg-surface-2 hover:bg-accent-soft"
+                  : "bg-surface-2 hover:bg-accent-soft",
               )}
               aria-label={m.label}
             >

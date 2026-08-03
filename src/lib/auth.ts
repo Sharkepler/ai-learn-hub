@@ -1,13 +1,11 @@
 import type { GithubUser } from "./types";
 import { encryptJSON, decryptJSON } from "./crypto";
+import { ALLOWED_LOGINS, LEGACY_SESSION_KEY, SESSION_KEY } from "./constants";
 
-// Only this GitHub account may enter. Change here to allow more logins.
-const ALLOWED_LOGINS = ["Sharkepler"];
-
-// 旧版明文 Token 的 key（升级时清理，避免明文残留）
-const LEGACY_KEY = "aih_session";
-// 新版：仅存 AES-GCM 密文
-const SESSION_KEY = "aih_session_v2";
+// 登录白名单 / 会话密钥已集中到 ./constants：
+// - ALLOWED_LOGINS：仅这些 GitHub 账号可登录
+// - SESSION_KEY：仅存 AES-GCM 密文（新版）
+// - LEGACY_SESSION_KEY：旧版明文 Token 的 key，升级时清理避免明文残留
 
 interface Session {
   token: string;
@@ -53,7 +51,7 @@ export async function verifyToken(token: string): Promise<GithubUser> {
 export async function saveSession(
   token: string,
   user: GithubUser,
-  remember = true
+  remember = true,
 ): Promise<void> {
   cache = { token, user };
   // 加密落盘；若加密失败（如底层存储异常）也不阻断登录，
@@ -72,7 +70,11 @@ export async function saveSession(
 export async function initSession(): Promise<Session | null> {
   if (cache) return cache;
   // 清理旧版明文 Token，避免明文残留
-  try { localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(LEGACY_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
   try {
     const blob =
       localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || null;
@@ -102,7 +104,7 @@ export function logout() {
   try {
     localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(LEGACY_KEY);
+    localStorage.removeItem(LEGACY_SESSION_KEY);
   } catch {
     /* ignore */
   }

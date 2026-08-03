@@ -9,32 +9,25 @@ import {
   notifyAssetsChanged,
   type Asset,
 } from "./assets";
+import { SYNC_CFG_KEY, LAST_SYNC_KEY, DEFAULT_SYNC_CFG } from "./constants";
 
-const CFG_KEY = "aih_sync_cfg";
-const LAST_KEY = "aih_last_sync";
-
-const DEFAULT_CFG: SyncConfig = {
-  enabled: true,
-  repo: "Sharkepler/ai-learn-hub-data",
-  branch: "main",
-  auto: true,
-};
+// 同步配置键 / 最后同步时间键 / 默认配置已集中到 ./constants。
 
 // ---------- config ----------
 export function getCfg(): SyncConfig {
   try {
-    const raw = localStorage.getItem(CFG_KEY);
-    if (raw) return { ...DEFAULT_CFG, ...JSON.parse(raw) };
+    const raw = localStorage.getItem(SYNC_CFG_KEY);
+    if (raw) return { ...DEFAULT_SYNC_CFG, ...JSON.parse(raw) };
   } catch {
     /* ignore */
   }
-  return { ...DEFAULT_CFG };
+  return { ...DEFAULT_SYNC_CFG };
 }
 
 export async function saveCfg(patch: Partial<SyncConfig>): Promise<SyncConfig> {
   const next = { ...getCfg(), ...patch };
   try {
-    localStorage.setItem(CFG_KEY, JSON.stringify(next));
+    localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(next));
   } catch {
     /* ignore */
   }
@@ -45,7 +38,7 @@ export async function saveCfg(patch: Partial<SyncConfig>): Promise<SyncConfig> {
 // 仅当配置仍是出厂默认（未自定义仓库）时才自动开启，避免覆盖用户有意的关闭。
 export function migrateSyncCfg(): void {
   try {
-    const raw = localStorage.getItem(CFG_KEY);
+    const raw = localStorage.getItem(SYNC_CFG_KEY);
     if (!raw) {
       saveCfg({ enabled: true });
       return;
@@ -54,8 +47,8 @@ export function migrateSyncCfg(): void {
     const isFactoryDefaultOff =
       cur &&
       cur.enabled === false &&
-      cur.repo === DEFAULT_CFG.repo &&
-      cur.branch === DEFAULT_CFG.branch &&
+      cur.repo === DEFAULT_SYNC_CFG.repo &&
+      cur.branch === DEFAULT_SYNC_CFG.branch &&
       cur.auto === true;
     if (isFactoryDefaultOff) saveCfg({ enabled: true });
   } catch {
@@ -69,7 +62,7 @@ export function isReady(): boolean {
 }
 
 export async function getLastSync(): Promise<number | null> {
-  return (await getMeta(LAST_KEY)) || null;
+  return (await getMeta(LAST_SYNC_KEY)) || null;
 }
 
 // ---------- helpers ----------
@@ -122,7 +115,7 @@ function mergeItems(local: Item[], remote: Item[]): Item[] {
 async function getDayFile(
   day: string,
   token: string,
-  cfg: SyncConfig
+  cfg: SyncConfig,
 ): Promise<{ items: Item[]; sha: string | null }> {
   const path = `/repos/${cfg.repo}/contents/data/${day}.json?ref=${cfg.branch}`;
   const res = await gh(path, token);
@@ -141,7 +134,7 @@ async function putDayFile(
   items: Item[],
   token: string,
   cfg: SyncConfig,
-  sha: string | null
+  sha: string | null,
 ): Promise<string> {
   const content = toB64(JSON.stringify({ day, items }, null, 0));
   const path = `/repos/${cfg.repo}/contents/data/${day}.json`;
@@ -221,7 +214,7 @@ export async function pullAll(token?: string): Promise<number> {
   } catch {
     /* 资产文件可能尚不存在，忽略 */
   }
-  await setMeta(LAST_KEY, Date.now());
+  await setMeta(LAST_SYNC_KEY, Date.now());
   return n;
 }
 
@@ -237,7 +230,7 @@ export async function pullDayInto(day: string, token?: string): Promise<number> 
 }
 
 // Two-way sync: pull remote first, then push local.
-export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
+export async function syncNow(_opts: { refresh?: boolean } = {}): Promise<{
   ok: boolean;
   pulled: number;
   pushed: number;
@@ -250,7 +243,9 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
   try {
     const pulled = await pullAll(tk);
     const all = await getAllItems();
-    const days = Array.from(new Set(all.map((i) => i.day))).sort().reverse();
+    const days = Array.from(new Set(all.map((i) => i.day)))
+      .sort()
+      .reverse();
     let pushed = 0;
     for (const d of days) {
       if (await pushDay(d, tk)) pushed++;
@@ -262,7 +257,7 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
       /* best-effort */
     }
     notifyAssetsChanged();
-    await setMeta(LAST_KEY, Date.now());
+    await setMeta(LAST_SYNC_KEY, Date.now());
     return { ok: true, pulled, pushed };
   } catch (e: any) {
     return { ok: false, pulled: 0, pushed: 0, error: e?.message || "同步失败" };
@@ -272,7 +267,7 @@ export async function syncNow(opts: { refresh?: boolean } = {}): Promise<{
 // ---------- assets.json (资产成本计算器) ----------
 async function getAssetsFile(
   token: string,
-  cfg: SyncConfig
+  cfg: SyncConfig,
 ): Promise<{ assets: Asset[]; sha: string | null }> {
   const path = `/repos/${cfg.repo}/contents/data/assets.json?ref=${cfg.branch}`;
   const res = await gh(path, token);
@@ -290,7 +285,7 @@ async function putAssetsFile(
   assets: Asset[],
   token: string,
   cfg: SyncConfig,
-  sha: string | null
+  sha: string | null,
 ): Promise<string> {
   const content = toB64(JSON.stringify({ assets }, null, 0));
   const path = `/repos/${cfg.repo}/contents/data/assets.json`;

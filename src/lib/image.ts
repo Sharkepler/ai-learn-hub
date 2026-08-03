@@ -8,7 +8,7 @@ export async function fileToResizedDataURL(
   file: File,
   maxW = 240,
   quality = 0.82,
-  maxBytes = 130000
+  maxBytes = 130000,
 ): Promise<string> {
   const original = await new Promise<string>((resolve, reject) => {
     const fr = new FileReader();

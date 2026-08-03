@@ -22,7 +22,7 @@ import {
   dailyCost,
   fmtMoney,
 } from "../lib/assets";
-import { ASSET_CATALOG, findCategory, type CatalogItem } from "../lib/assetCatalog";
+import { ASSET_CATALOG, findCategory, type CatalogItem } from "../lib/productCatalog";
 import { uid, ymd, fmtDate } from "../lib/util";
 import { fileToResizedDataURL } from "../lib/image";
 import { pushAssets } from "../lib/sync";
@@ -141,8 +141,18 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
     if (form.id) {
       next = raw.map((a) =>
         a.id === form.id
-          ? { ...a, categoryId: form.categoryId, itemId: form.itemId, name, price, boughtAt, note: form.note.trim() || undefined, photo, updatedAt: now }
-          : a
+          ? {
+              ...a,
+              categoryId: form.categoryId,
+              itemId: form.itemId,
+              name,
+              price,
+              boughtAt,
+              note: form.note.trim() || undefined,
+              photo,
+              updatedAt: now,
+            }
+          : a,
       );
       toast("已更新", "ok");
     } else {
@@ -167,7 +177,7 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
   async function confirmDel() {
     if (!pendingDel) return;
     const next = raw.map((a) =>
-      a.id === pendingDel.id ? { ...a, deleted: true, updatedAt: Date.now() } : a
+      a.id === pendingDel.id ? { ...a, deleted: true, updatedAt: Date.now() } : a,
     );
     await persist(next);
     setPendingDel(null);
@@ -177,7 +187,7 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
   const totalValue = list.reduce((s, a) => s + a.price, 0);
   const totalDaily = list.reduce(
     (s, a) => s + dailyCost(a.price, daysTogether(a.boughtAt)),
-    0
+    0,
   );
 
   const activeCat = form.categoryId ? findCategory(form.categoryId) : undefined;
@@ -272,9 +282,7 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
             {/* 物品选择（选定分类后展开） */}
             {activeCat && (
               <div className="mb-3">
-                <p className="mb-1.5 text-xs font-medium text-text-2">
-                  选择具体物品
-                </p>
+                <p className="mb-1.5 text-xs font-medium text-text-2">选择具体物品</p>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {activeCat.items.map((it) => {
                     const selected = form.itemId === it.id;
@@ -365,14 +373,14 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
               )}
               <div className="flex flex-col gap-1">
                 <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    onClick={() => fileRef.current?.click()}
-                  >
+                  <Button variant="ghost" onClick={() => fileRef.current?.click()}>
                     <Camera size={16} /> {form.photo ? "更换照片" : "上传实物照片"}
                   </Button>
                   {form.photo && (
-                    <Button variant="ghost" onClick={() => setForm((f) => ({ ...f, photo: undefined }))}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setForm((f) => ({ ...f, photo: undefined }))}
+                    >
                       移除
                     </Button>
                   )}
@@ -421,14 +429,10 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
                         <p className="mt-0.5 text-sm text-text-2">
                           购买于 {fmtDate(ymd(a.boughtAt))} · {fmtMoney(a.price)}
                         </p>
-                        {a.note && (
-                          <p className="mt-1 text-xs text-text-2">{a.note}</p>
-                        )}
+                        {a.note && <p className="mt-1 text-xs text-text-2">{a.note}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-accent">
-                          {fmtMoney(cost)}
-                        </p>
+                        <p className="text-lg font-bold text-accent">{fmtMoney(cost)}</p>
                         <p className="text-xs text-text-2">日均</p>
                       </div>
                     </div>

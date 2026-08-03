@@ -43,9 +43,7 @@ export function fmtDur(min: number): string {
 }
 
 export function uid(): string {
-  return (
-    Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-  ).toUpperCase();
+  return (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).toUpperCase();
 }
 
 export function extractTags(text: string): string[] {
@@ -58,8 +56,9 @@ export function extractTags(text: string): string[] {
 }
 
 export function escapeHtml(s: string): string {
-  return (s || "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
+  return (s || "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
 }
 
@@ -68,7 +67,7 @@ export function escapeHtml(s: string): string {
 export function compressImage(
   file: File,
   maxDim = 1280,
-  quality = 0.82
+  quality = 0.82,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -18,20 +18,15 @@ import {
 import * as ai from "../lib/ai";
 import { renderMarkdown } from "../lib/markdown";
 
-export const cn = (...a: (string | false | null | undefined)[]) =>
-  clsx(...a);
+export const cn = (...a: (string | false | null | undefined)[]) => clsx(...a);
 
 // ---------- Card ----------
-export function Card({
-  className,
-  children,
-  ...rest
-}: HTMLAttributes<HTMLDivElement>) {
+export function Card({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
         "rounded-[16px] bg-surface border border-border p-4 shadow-[0_1px_2px_rgba(44,38,32,0.06)]",
-        className
+        className,
       )}
       {...rest}
     >
@@ -61,10 +56,7 @@ export function Button({
     danger: "bg-red-500 text-white hover:bg-red-600",
   };
   return (
-    <button
-      className={cn(base, styles[variant], block && "w-full", className)}
-      {...rest}
-    >
+    <button className={cn(base, styles[variant], block && "w-full", className)} {...rest}>
       {children}
     </button>
   );
@@ -119,9 +111,7 @@ export function Modal({
         className="w-full max-w-lg rounded-t-[20px] bg-surface p-5 shadow-2xl sm:rounded-[20px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {title && (
-          <h3 className="mb-3 text-lg font-bold tracking-tight">{title}</h3>
-        )}
+        {title && <h3 className="mb-3 text-lg font-bold tracking-tight">{title}</h3>}
         {children}
       </motion.div>
     </div>
@@ -170,7 +160,7 @@ export function Spinner({ className }: { className?: string }) {
     <span
       className={cn(
         "inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent",
-        className
+        className,
       )}
     />
   );
@@ -192,7 +182,7 @@ function surround(
   value: string,
   start: number,
   end: number,
-  placeholder = "文本"
+  placeholder = "文本",
 ): EditOp {
   const sel = value.slice(start, end) || placeholder;
   const rep = before + sel + after;
@@ -202,12 +192,7 @@ function surround(
 }
 
 // 行首前缀型（标题/引用/列表）：对选中涉及到的每一行加前缀
-function prefixLines(
-  prefix: string,
-  value: string,
-  start: number,
-  end: number
-): EditOp {
+function prefixLines(prefix: string, value: string, start: number, end: number): EditOp {
   const ls = value.lastIndexOf("\n", start - 1) + 1;
   const block = value.slice(ls, end);
   const rep = block
@@ -307,8 +292,7 @@ export function MarkdownEditor({
     {
       icon: <LinkIcon size={16} />,
       label: "链接",
-      act: () =>
-        run((v, s, e) => surround("[", "](https://)", v, s, e, "链接文字")),
+      act: () => run((v, s, e) => surround("[", "](https://)", v, s, e, "链接文字")),
     },
     {
       icon: <></>,
@@ -321,7 +305,7 @@ export function MarkdownEditor({
     <div
       className={cn(
         "rounded-[12px] border border-border bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25",
-        className
+        className,
       )}
     >
       {/* 工具栏 */}
@@ -347,7 +331,7 @@ export function MarkdownEditor({
             "ml-auto grid h-8 w-8 place-items-center rounded-md transition",
             showPreview
               ? "bg-accent-soft text-accent"
-              : "text-text-2 hover:bg-surface-2 hover:text-accent"
+              : "text-text-2 hover:bg-surface-2 hover:text-accent",
           )}
         >
           <Eye size={16} />
@@ -355,7 +339,12 @@ export function MarkdownEditor({
       </div>
 
       {/* 编辑区 + 实时预览区（上下布局） */}
-      <div className={cn("relative", showPreview && value.trim() && "divide-y divide-border")}>
+      <div
+        className={cn(
+          "relative",
+          showPreview && value.trim() && "divide-y divide-border",
+        )}
+      >
         <textarea
           ref={ref}
           value={value}
@@ -455,7 +444,7 @@ export function AiPanel({
               "rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-40",
               kind === k
                 ? "bg-accent text-white"
-                : "bg-surface text-text-2 hover:bg-surface-2"
+                : "bg-surface text-text-2 hover:bg-surface-2",
             )}
           >
             {label}
@@ -544,9 +533,7 @@ export function EmptyState({
       )}
       <p className="text-base font-semibold tracking-tight">{title}</p>
       {desc && (
-        <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-text-2">
-          {desc}
-        </p>
+        <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-text-2">{desc}</p>
       )}
       {action && <div className="mt-5">{action}</div>}
     </div>

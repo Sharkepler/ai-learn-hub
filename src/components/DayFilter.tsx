@@ -39,7 +39,7 @@ function Chip({
         "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition active:scale-95",
         active
           ? "border-accent bg-accent text-white"
-          : "border-border bg-surface text-text-2 hover:bg-surface-2"
+          : "border-border bg-surface text-text-2 hover:bg-surface-2",
       )}
     >
       {children}

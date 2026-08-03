@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 interface ToastItem {
@@ -13,21 +7,16 @@ interface ToastItem {
   tone: "ok" | "err" | "info";
 }
 
-const Ctx = createContext<(msg: string, tone?: ToastItem["tone"]) => void>(
-  () => {}
-);
+const Ctx = createContext<(msg: string, tone?: ToastItem["tone"]) => void>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [list, setList] = useState<ToastItem[]>([]);
 
-  const toast = useCallback(
-    (msg: string, tone: ToastItem["tone"] = "info") => {
-      const id = Date.now() + Math.random();
-      setList((p) => [...p, { id, msg, tone }]);
-      setTimeout(() => setList((p) => p.filter((t) => t.id !== id)), 2600);
-    },
-    []
-  );
+  const toast = useCallback((msg: string, tone: ToastItem["tone"] = "info") => {
+    const id = Date.now() + Math.random();
+    setList((p) => [...p, { id, msg, tone }]);
+    setTimeout(() => setList((p) => p.filter((t) => t.id !== id)), 2600);
+  }, []);
 
   return (
     <Ctx.Provider value={toast}>
@@ -46,8 +35,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 (t.tone === "err"
                   ? "bg-red-500 text-white"
                   : t.tone === "ok"
-                  ? "bg-accent text-white"
-                  : "bg-surface-2 text-text border border-border")
+                    ? "bg-accent text-white"
+                    : "bg-surface-2 text-text border border-border")
               }
             >
               {t.msg}

@@ -44,7 +44,10 @@ const TYPE_META: Record<MediaType, { label: string; icon: any; emoji: string }> 
 const STATUS_META: Record<MediaStatus, { label: string; cls: string }> = {
   want: { label: "想看", cls: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300" },
   doing: { label: "进行中", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-300" },
-  done: { label: "已看完", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" },
+  done: {
+    label: "已看完",
+    cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+  },
 };
 
 const TYPES = Object.keys(TYPE_META) as MediaType[];
@@ -79,9 +82,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
     if (status !== "all") r = r.filter((i) => i.status === status);
     if (q.trim()) {
       const k = q.trim().toLowerCase();
-      r = r.filter((i) =>
-        (i.title + " " + (i.creator || "")).toLowerCase().includes(k)
-      );
+      r = r.filter((i) => (i.title + " " + (i.creator || "")).toLowerCase().includes(k));
     }
     return r;
   }, [items, type, status, q]);
@@ -131,7 +132,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
                 "rounded-full px-3 py-1 text-xs font-medium transition",
                 type === t
                   ? "bg-accent text-white"
-                  : "bg-surface-2 text-text-2 hover:text-accent"
+                  : "bg-surface-2 text-text-2 hover:text-accent",
               )}
             >
               {t === "all" ? "全部类型" : TYPE_META[t].label}
@@ -145,7 +146,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
                 "rounded-full px-3 py-1 text-xs font-medium transition",
                 status === s
                   ? "bg-accent text-white"
-                  : "bg-surface-2 text-text-2 hover:text-accent"
+                  : "bg-surface-2 text-text-2 hover:text-accent",
               )}
             >
               {s === "all" ? "全部状态" : STATUS_META[s].label}
@@ -188,7 +189,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
                   item={it}
                   onOpen={() => setDetail(it)}
                   onEdit={() => setForm({ open: true, edit: it })}
-                  onRemove={(id) => askDelete(it)}
+                  onRemove={() => askDelete(it)}
                 />
               </Reveal>
             ))
@@ -228,7 +229,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
             setDetail(null);
             setForm({ open: true, edit: detail });
           }}
-          onRemove={(id) => askDelete(detail)}
+          onRemove={() => askDelete(detail)}
         />
       )}
 
@@ -325,7 +326,7 @@ function MediaCard({
           <span
             className={cn(
               "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
-              sm.cls
+              sm.cls,
             )}
           >
             {sm.label}
@@ -398,14 +399,12 @@ function MediaDetail({
           <span
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-medium",
-              STATUS_META[item.status].cls
+              STATUS_META[item.status].cls,
             )}
           >
             {STATUS_META[item.status].label}
           </span>
-          {item.creator && (
-            <span className="text-xs text-text-2">· {item.creator}</span>
-          )}
+          {item.creator && <span className="text-xs text-text-2">· {item.creator}</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -429,8 +428,7 @@ function MediaDetail({
 
         <p className="text-xs text-text-2">
           创建：{fmtDateTime(item.createdAt)}
-          {item.updatedAt !== item.createdAt &&
-            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+          {item.updatedAt !== item.createdAt && ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
 
         <AiPanel source={mediaSource(item)} />

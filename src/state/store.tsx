@@ -8,15 +8,16 @@ import {
   type ReactNode,
 } from "react";
 import type { Item } from "../lib/types";
-import { getAllItems, putItem, getMeta, setMeta } from "../lib/db";
+import { getAllItems, putItem, getMeta } from "../lib/db";
 import { pushDay, syncNow } from "../lib/sync";
+import { LAST_SYNC_KEY } from "../lib/constants";
 
 // 保存/删除时真正推送到云端再返回是否成功；超时（默认 10s）视为未同步，避免离线时卡住 UI。
 async function pushWithTimeout(day: string, ms = 10000): Promise<boolean> {
   try {
     const p = pushDay(day);
     const t = new Promise<boolean>((_, rej) =>
-      setTimeout(() => rej(new Error("sync-timeout")), ms)
+      setTimeout(() => rej(new Error("sync-timeout")), ms),
     );
     return await Promise.race([p, t]);
   } catch {
@@ -36,8 +37,6 @@ interface StoreCtx {
 
 const Ctx = createContext<StoreCtx | null>(null);
 
-const LAST_KEY = "aih_last_sync";
-
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const all = await getAllItems();
     all.sort((a, b) => b.createdAt - a.createdAt);
     setItems(all);
-    setLastSync((await getMeta(LAST_KEY)) || null);
+    setLastSync((await getMeta(LAST_SYNC_KEY)) || null);
     setLoading(false);
     inFlight.current = false;
   }, []);
@@ -69,15 +68,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return synced;
   }, []);
 
-  const removeItem = useCallback(async (id: string): Promise<boolean> => {
-    const cur = items.find((i) => i.id === id);
-    if (!cur) return false;
-    const soft: Item = { ...cur, deleted: true, updatedAt: Date.now() };
-    await putItem(soft);
-    const synced = await pushWithTimeout(soft.day);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    return synced;
-  }, [items]);
+  const removeItem = useCallback(
+    async (id: string): Promise<boolean> => {
+      const cur = items.find((i) => i.id === id);
+      if (!cur) return false;
+      const soft: Item = { ...cur, deleted: true, updatedAt: Date.now() };
+      await putItem(soft);
+      const synced = await pushWithTimeout(soft.day);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      return synced;
+    },
+    [items],
+  );
 
   useEffect(() => {
     reload();

@@ -1,4 +1,11 @@
-import { Sun, Moon, Cloud, CloudArrowUp, SignOut, MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  Sun,
+  Moon,
+  Cloud,
+  CloudArrowUp,
+  SignOut,
+  MagnifyingGlass,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import type { GithubUser } from "../lib/types";
 import { fmtDateTime } from "../lib/util";
@@ -87,7 +94,7 @@ export default function TopBar({
                 <button
                   onClick={onLogout}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
+                    "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-red-500 transition hover:bg-red-500/10",
                   )}
                 >
                   <SignOut size={16} /> 退出登录

@@ -1,10 +1,10 @@
-export type Theme = "light" | "dark" | "system";
+import { THEME_KEY } from "./constants";
 
-const KEY = "aih_theme";
+export type Theme = "light" | "dark" | "system";
 
 export function getStoredTheme(): Theme {
   try {
-    const t = localStorage.getItem(KEY) as Theme | null;
+    const t = localStorage.getItem(THEME_KEY) as Theme | null;
     if (t === "light" || t === "dark" || t === "system") return t;
   } catch {
     /* ignore */
@@ -21,7 +21,7 @@ export function applyTheme(t: Theme) {
   const dark = t === "dark" || (t === "system" && sys);
   document.documentElement.classList.toggle("dark", dark);
   try {
-    localStorage.setItem(KEY, t);
+    localStorage.setItem(THEME_KEY, t);
   } catch {
     /* ignore */
   }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { findCatalogItem } from "../lib/assetCatalog";
+import { findCatalogItem } from "../lib/productCatalog";
 
 // 已失败的远程图片 URL 缓存：避免每次渲染反复重试造成闪烁。
 const FAIL = new Map<string, true>();

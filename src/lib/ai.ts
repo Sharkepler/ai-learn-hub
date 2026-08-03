@@ -1,9 +1,7 @@
 // AI assist via LongCat (OpenAI-compatible chat completions).
 // 安全：API Key 不再硬编码，改为用户在「设置 → AI 配置」中填写，加密存储于本机。
 import { loadAiKey } from "./crypto";
-
-const ENDPOINT = "https://api.longcat.chat/openai/v1/chat/completions";
-const MODEL = "LongCat-2.0";
+import { AI_ENDPOINT, AI_MODEL } from "./constants";
 
 export interface Msg {
   role: "system" | "user" | "assistant";
@@ -12,15 +10,13 @@ export interface Msg {
 
 export async function complete(
   messages: Msg[],
-  opts: { signal?: AbortSignal } = {}
+  opts: { signal?: AbortSignal } = {},
 ): Promise<string> {
   const API_KEY = await loadAiKey();
   if (!API_KEY) {
-    throw new Error(
-      "未配置 AI Key，请在「设置 → AI 配置」中填写你的 LongCat API Key"
-    );
+    throw new Error("未配置 AI Key，请在「设置 → AI 配置」中填写你的 LongCat API Key");
   }
-  const res = await fetch(ENDPOINT, {
+  const res = await fetch(AI_ENDPOINT, {
     method: "POST",
     signal: opts.signal,
     headers: {
@@ -28,7 +24,7 @@ export async function complete(
       Authorization: `Bearer ${API_KEY}`,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: AI_MODEL,
       messages,
       temperature: 0.7,
       stream: false,
@@ -54,7 +50,7 @@ export function summarize(text: string, signal?: AbortSignal) {
         content: `用 2-3 句话总结下面这段灵感的核心观点，并列出 3 个关键要点：\n\n${text}`,
       },
     ],
-    { signal }
+    { signal },
   );
 }
 
@@ -67,7 +63,7 @@ export function knowledgeFrame(text: string, signal?: AbortSignal) {
         content: `把下面内容整理成一个知识框架（用层级列表，最多三层），并指出它属于哪个领域：\n\n${text}`,
       },
     ],
-    { signal }
+    { signal },
   );
 }
 
@@ -80,8 +76,6 @@ export function resources(text: string, signal?: AbortSignal) {
         content: `针对下面的兴趣点，推荐 3-5 个具体的学习资源（书 / 课程 / 工具 / 社区），并说明理由：\n\n${text}`,
       },
     ],
-    { signal }
+    { signal },
   );
-
 }
-

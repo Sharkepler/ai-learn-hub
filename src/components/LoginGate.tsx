@@ -5,11 +5,7 @@ import { verifyToken, saveSession } from "../lib/auth";
 import type { GithubUser } from "../lib/types";
 import { Button, Field, inputCls } from "./ui";
 
-export default function LoginGate({
-  onLogin,
-}: {
-  onLogin: (u: GithubUser) => void;
-}) {
+export default function LoginGate({ onLogin }: { onLogin: (u: GithubUser) => void }) {
   const [token, setToken] = useState("");
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);

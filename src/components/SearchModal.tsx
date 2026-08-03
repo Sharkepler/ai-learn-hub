@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  X,
-  MagnifyingGlass,
-  Lightbulb,
-  BookOpen,
-} from "@phosphor-icons/react";
+import { X, MagnifyingGlass, Lightbulb, BookOpen } from "@phosphor-icons/react";
 import { useStore } from "../state/store";
 import type { Item } from "../lib/types";
 import { fmtDateTime } from "../lib/util";
@@ -26,7 +21,7 @@ function searchText(item: Item): string {
 function display(item: Item): { title: string; body: string } {
   if (item.kind === "inspiration") {
     const clean = item.text
-      .replace(/[#*`>_~\-]/g, "")
+      .replace(/[#*`>_~-]/g, "")
       .replace(/\s+/g, " ")
       .trim();
     return {
@@ -57,7 +52,7 @@ function highlight(text: string, kws: string[]): ReactNode {
       </mark>
     ) : (
       <span key={i}>{p}</span>
-    )
+    ),
   );
 }
 
@@ -86,16 +81,12 @@ export default function SearchModal({
   }, [open]);
 
   // 多关键词（空格分隔，AND 匹配）
-  const kws = useMemo(
-    () => q.trim().toLowerCase().split(/\s+/).filter(Boolean),
-    [q]
-  );
+  const kws = useMemo(() => q.trim().toLowerCase().split(/\s+/).filter(Boolean), [q]);
 
   const results = useMemo(() => {
     let res = items.filter((i) => !i.deleted);
     if (type !== "all") res = res.filter((i) => i.kind === type);
-    if (kws.length)
-      res = res.filter((i) => kws.every((k) => searchText(i).includes(k)));
+    if (kws.length) res = res.filter((i) => kws.every((k) => searchText(i).includes(k)));
     return res.sort((a, b) => b.createdAt - a.createdAt);
   }, [items, type, kws]);
 
@@ -149,7 +140,7 @@ export default function SearchModal({
                 "rounded-full px-3 py-1 text-xs font-medium transition",
                 type === t.key
                   ? "bg-accent text-white"
-                  : "bg-surface-2 text-text-2 hover:text-accent"
+                  : "bg-surface-2 text-text-2 hover:text-accent",
               )}
             >
               {t.label}
@@ -167,8 +158,7 @@ export default function SearchModal({
           ) : (
             <>
               <p className="mb-2 text-xs text-text-2">
-                共 {results.length} 条
-                {q.trim() && "（已筛选）"}
+                共 {results.length} 条{q.trim() && "（已筛选）"}
               </p>
               <div className="space-y-2">
                 {shown.map((it) => {
@@ -185,7 +175,7 @@ export default function SearchModal({
                             "flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
                             it.kind === "inspiration"
                               ? "bg-accent-soft text-accent"
-                              : "bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                              : "bg-sky-500/10 text-sky-600 dark:text-sky-400",
                           )}
                         >
                           {it.kind === "inspiration" ? (

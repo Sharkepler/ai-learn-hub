@@ -82,8 +82,7 @@ export function downloadText(filename: string, text: string) {
 
 /** 单条灵感导出文件名，例如：灵感-2026-08-02-关于设计.md */
 export function inspirationFileName(item: InspirationItem): string {
-  const firstLine =
-    ((item.text || "灵感").split(/\n/)[0].trim().slice(0, 24) || "灵感");
+  const firstLine = (item.text || "灵感").split(/\n/)[0].trim().slice(0, 24) || "灵感";
   return `灵感-${ymd(item.createdAt)}-${safeName(firstLine)}.md`;
 }
 
@@ -96,24 +95,18 @@ export function inspirationsFileName(): string {
 // 先转义 HTML，再做有限的 Markdown 转换，避免注入；链接仅允许 http(s)/mailto。
 
 function escHtml(s: string): string {
-  return (s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function inlineMd(s: string): string {
   // s 已经过 escHtml；行内按序处理
   s = s.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
-  s = s.replace(
-    /\[([^\]]+)\]\(([^)\s]+)\)/g,
-    (_m, t: string, url: string) => {
-      const u = String(url);
-      if (/^(https?:|mailto:)/i.test(u))
-        return `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`;
-      return t;
-    }
-  );
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, t: string, url: string) => {
+    const u = String(url);
+    if (/^(https?:|mailto:)/i.test(u))
+      return `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`;
+    return t;
+  });
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
   s = s.replace(/(^|[^_])_([^_]+)_(?!_)/g, "$1<em>$2</em>");
@@ -189,9 +182,7 @@ export function renderMarkdown(src: string): string {
         out.push("<ul>");
         listType = "ul";
       }
-      out.push(
-        `<li>${inlineMd(escHtml(line.replace(/^[-*+]\s+/, "")))}</li>`
-      );
+      out.push(`<li>${inlineMd(escHtml(line.replace(/^[-*+]\s+/, "")))}</li>`);
       i++;
       continue;
     }
@@ -203,9 +194,7 @@ export function renderMarkdown(src: string): string {
         out.push("<ol>");
         listType = "ol";
       }
-      out.push(
-        `<li>${inlineMd(escHtml(line.replace(/^\d+\.\s+/, "")))}</li>`
-      );
+      out.push(`<li>${inlineMd(escHtml(line.replace(/^\d+\.\s+/, "")))}</li>`);
       i++;
       continue;
     }
@@ -221,11 +210,7 @@ export function renderMarkdown(src: string): string {
     closeList();
     const buf: string[] = [inlineMd(escHtml(line))];
     i++;
-    while (
-      i < lines.length &&
-      lines[i].trim() !== "" &&
-      !BLOCK_START.test(lines[i])
-    ) {
+    while (i < lines.length && lines[i].trim() !== "" && !BLOCK_START.test(lines[i])) {
       buf.push(inlineMd(escHtml(lines[i])));
       i++;
     }

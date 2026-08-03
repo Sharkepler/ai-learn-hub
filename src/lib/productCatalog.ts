@@ -28,8 +28,18 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     emoji: "📱",
     items: [
       { id: "xiaomi14", name: "小米 14", emoji: "📱", image: WIKI("Xiaomi_14.jpg") },
-      { id: "iphone15", name: "iPhone 15", emoji: "📱", image: WIKI("IPhone_15_Pro.jpg") },
-      { id: "mate60", name: "华为 Mate 60", emoji: "📱", image: WIKI("Huawei_Mate_60_Pro.jpg") },
+      {
+        id: "iphone15",
+        name: "iPhone 15",
+        emoji: "📱",
+        image: WIKI("IPhone_15_Pro.jpg"),
+      },
+      {
+        id: "mate60",
+        name: "华为 Mate 60",
+        emoji: "📱",
+        image: WIKI("Huawei_Mate_60_Pro.jpg"),
+      },
       { id: "s24", name: "三星 S24", emoji: "📱", image: WIKI("Samsung_Galaxy_S24.jpg") },
     ],
   },
@@ -38,7 +48,12 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     name: "电脑",
     emoji: "💻",
     items: [
-      { id: "mbp", name: "MacBook Pro", emoji: "💻", image: WIKI("MacBook_Pro_14%22.jpg") },
+      {
+        id: "mbp",
+        name: "MacBook Pro",
+        emoji: "💻",
+        image: WIKI("MacBook_Pro_14%22.jpg"),
+      },
       { id: "ipad", name: "iPad", emoji: "📟", image: WIKI("Apple_iPad_2021.jpg") },
       { id: "desktop", name: "台式机", emoji: "🖥️" },
       { id: "monitor", name: "显示器", emoji: "🖥️", image: WIKI("Computer_Display.jpg") },
@@ -49,8 +64,18 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     name: "耳机音频",
     emoji: "🎧",
     items: [
-      { id: "airpods", name: "AirPods Pro", emoji: "🎧", image: WIKI("Apple_AirPods_Pro.jpg") },
-      { id: "xm5", name: "索尼 WH-1000XM5", emoji: "🎧", image: WIKI("Sony_WH-1000XM5.jpg") },
+      {
+        id: "airpods",
+        name: "AirPods Pro",
+        emoji: "🎧",
+        image: WIKI("Apple_AirPods_Pro.jpg"),
+      },
+      {
+        id: "xm5",
+        name: "索尼 WH-1000XM5",
+        emoji: "🎧",
+        image: WIKI("Sony_WH-1000XM5.jpg"),
+      },
       { id: "homepod", name: "智能音箱", emoji: "🔊" },
     ],
   },
@@ -59,7 +84,12 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     name: "手表穿戴",
     emoji: "⌚",
     items: [
-      { id: "applewatch", name: "Apple Watch", emoji: "⌚", image: WIKI("Apple_Watch_Series_9.jpg") },
+      {
+        id: "applewatch",
+        name: "Apple Watch",
+        emoji: "⌚",
+        image: WIKI("Apple_Watch_Series_9.jpg"),
+      },
       { id: "miwatch", name: "小米手环", emoji: "⌚" },
     ],
   },
@@ -68,7 +98,12 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     name: "相机",
     emoji: "📷",
     items: [
-      { id: "mirrorless", name: "微单相机", emoji: "📷", image: WIKI("Mirrorless_camera.jpg") },
+      {
+        id: "mirrorless",
+        name: "微单相机",
+        emoji: "📷",
+        image: WIKI("Mirrorless_camera.jpg"),
+      },
       { id: "action", name: "运动相机", emoji: "📷" },
     ],
   },
@@ -77,8 +112,18 @@ export const ASSET_CATALOG: CatalogCategory[] = [
     name: "游戏机",
     emoji: "🎮",
     items: [
-      { id: "ps5", name: "PlayStation 5", emoji: "🎮", image: WIKI("PlayStation_5_and_DualSense.jpg") },
-      { id: "switch", name: "Switch", emoji: "🎮", image: WIKI("Nintendo_Switch_OLED.jpg") },
+      {
+        id: "ps5",
+        name: "PlayStation 5",
+        emoji: "🎮",
+        image: WIKI("PlayStation_5_and_DualSense.jpg"),
+      },
+      {
+        id: "switch",
+        name: "Switch",
+        emoji: "🎮",
+        image: WIKI("Nintendo_Switch_OLED.jpg"),
+      },
       { id: "steamdeck", name: "Steam Deck", emoji: "🎮" },
     ],
   },
@@ -121,7 +166,7 @@ export function findCategory(id?: string): CatalogCategory | undefined {
 
 export function findCatalogItem(
   categoryId?: string,
-  itemId?: string
+  itemId?: string,
 ): CatalogItem | undefined {
   const cat = findCategory(categoryId);
   if (!cat || !itemId) return undefined;

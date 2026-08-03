@@ -47,7 +47,7 @@ export default function Inspiration({
   focusId?: string | null;
   onConsumeFocus?: () => void;
 }) {
-  const { items, addItem, updateItem, removeItem, reload } = useStore();
+  const { items, addItem, removeItem, reload } = useStore();
   const toast = useToast();
   const [day, setDay] = useState<string | null>(null);
   const [tag, setTag] = useState<string | null>(null);
@@ -57,7 +57,11 @@ export default function Inspiration({
   const [limit, setLimit] = useState(PAGE);
 
   // 详情 / 放大图（AI 面板内嵌于详情；autoRun 控制打开是否自动调用 AI）
-  const [detail, setDetail] = useState<{ item: InspirationItem; kind: AiKind; autoRun: boolean } | null>(null);
+  const [detail, setDetail] = useState<{
+    item: InspirationItem;
+    kind: AiKind;
+    autoRun: boolean;
+  } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pendingDel, setPendingDel] = useState<InspirationItem | null>(null);
 
@@ -77,7 +81,11 @@ export default function Inspiration({
     }
   }, [day, reload]);
 
-  function openDetail(item: InspirationItem, kind: AiKind = "summarize", autoRun = false) {
+  function openDetail(
+    item: InspirationItem,
+    kind: AiKind = "summarize",
+    autoRun = false,
+  ) {
     setDetail({ item, kind, autoRun });
   }
 
@@ -90,13 +98,14 @@ export default function Inspiration({
         onConsumeFocus?.();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId]);
 
-  const all = items.filter((i) => i.kind === "inspiration" && !i.deleted) as InspirationItem[];
+  const all = items.filter(
+    (i) => i.kind === "inspiration" && !i.deleted,
+  ) as InspirationItem[];
   const tags = useMemo(
     () => Array.from(new Set(all.flatMap((i) => i.tags))).slice(0, 16),
-    [all]
+    [all],
   );
 
   const visible = all
@@ -114,7 +123,13 @@ export default function Inspiration({
     if (!text) return;
     const now = Date.now();
     const tags = Array.from(
-      new Set([...extractTags(text), ...quickTags.split(/[\s,，#]+/).map((s) => s.trim()).filter(Boolean)])
+      new Set([
+        ...extractTags(text),
+        ...quickTags
+          .split(/[\s,，#]+/)
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ]),
     );
     const item: InspirationItem = {
       id: uid(),
@@ -157,10 +172,7 @@ export default function Inspiration({
           {all.length > 0 && (
             <button
               onClick={() => {
-                downloadText(
-                  inspirationsFileName(),
-                  inspirationsToMarkdown(all)
-                );
+                downloadText(inspirationsFileName(), inspirationsToMarkdown(all));
                 toast(`已导出全部灵感（${all.length} 条）`, "ok");
               }}
               className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-text-2 transition hover:bg-surface-2"
@@ -186,11 +198,20 @@ export default function Inspiration({
         <Field label="配图（可选）">
           <label className="flex cursor-pointer items-center gap-2 rounded-[12px] border border-dashed border-border px-3 py-2.5 text-sm text-text-2">
             <ImageIcon size={18} /> {quickImg ? "已选择图片，点击替换" : "选择图片"}
-            <input type="file" accept="image/*" className="hidden" onChange={onQuickImg} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onQuickImg}
+            />
           </label>
         </Field>
         {quickImg && (
-          <img src={quickImg} alt="" className="mt-2 max-h-40 w-full rounded-xl object-cover" />
+          <img
+            src={quickImg}
+            alt=""
+            className="mt-2 max-h-40 w-full rounded-xl object-cover"
+          />
         )}
         <div className="mt-2 flex justify-end">
           <Button onClick={quickAdd} disabled={!quick.trim()}>
@@ -207,9 +228,7 @@ export default function Inspiration({
             onClick={() => setTag(null)}
             className={
               "shrink-0 rounded-full px-3 py-1 text-xs font-medium " +
-              (tag === null
-                ? "bg-accent text-white"
-                : "bg-surface-2 text-text-2")
+              (tag === null ? "bg-accent text-white" : "bg-surface-2 text-text-2")
             }
           >
             全部标签
@@ -220,9 +239,7 @@ export default function Inspiration({
               onClick={() => setTag(t === tag ? null : t)}
               className={
                 "shrink-0 rounded-full px-3 py-1 text-xs font-medium " +
-                (t === tag
-                  ? "bg-accent text-white"
-                  : "bg-surface-2 text-text-2")
+                (t === tag ? "bg-accent text-white" : "bg-surface-2 text-text-2")
               }
             >
               #{t}
@@ -279,9 +296,7 @@ export default function Inspiration({
         />
       )}
 
-      {lightbox && (
-        <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
-      )}
+      {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
 
       {pendingDel && (
         <ConfirmDialog
@@ -295,7 +310,7 @@ export default function Inspiration({
             setPendingDel(null);
             toast(
               synced ? "已删除（已同步）" : "已删除（本地标记）",
-              synced ? "ok" : "info"
+              synced ? "ok" : "info",
             );
           }}
           onCancel={() => setPendingDel(null)}
@@ -522,7 +537,7 @@ function InspirationDetail({
                 onClick={() => {
                   downloadText(
                     inspirationFileName(current),
-                    inspirationToMarkdown(current)
+                    inspirationToMarkdown(current),
                   );
                   toast("已导出为 Markdown", "ok");
                 }}
@@ -567,7 +582,13 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
     if (!t) return;
     const now = Date.now();
     const tags = Array.from(
-      new Set([...extractTags(t), ...tagsRaw.split(/[\s,，#]+/).map((s) => s.trim()).filter(Boolean)])
+      new Set([
+        ...extractTags(t),
+        ...tagsRaw
+          .split(/[\s,，#]+/)
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ]),
     );
     const item: InspirationItem = {
       id: uid(),
@@ -609,7 +630,10 @@ function AddFab({ addItem }: { addItem: (i: Item) => Promise<boolean> }) {
             minHeight={100}
           />
         </Field>
-        <Field label="标签（逗号分隔，或从正文提取 #标签）" hint="正文里的 #话题 会自动提取">
+        <Field
+          label="标签（逗号分隔，或从正文提取 #标签）"
+          hint="正文里的 #话题 会自动提取"
+        >
           <input
             className={inputCls}
             value={tagsRaw}

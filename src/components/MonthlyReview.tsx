@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  X,
-  Plus,
-  Pencil,
-  Trash,
-  Star,
-  CalendarBlank,
-} from "@phosphor-icons/react";
+import { X, Plus, Pencil, Trash, Star, CalendarBlank } from "@phosphor-icons/react";
 import {
   Card,
   Button,
@@ -21,12 +14,7 @@ import {
   cn,
 } from "./ui";
 import { renderMarkdown } from "../lib/markdown";
-import {
-  loadReviews,
-  saveReviews,
-  newReview,
-  type ReviewItem,
-} from "../lib/review";
+import { loadReviews, saveReviews, newReview, type ReviewItem } from "../lib/review";
 import { fmtDateTime } from "../lib/util";
 
 export default function MonthlyReview({ onClose }: { onClose: () => void }) {
@@ -56,7 +44,7 @@ export default function MonthlyReview({ onClose }: { onClose: () => void }) {
     return items.filter((i) =>
       (i.month + " " + i.highlights + " " + i.lows + " " + i.next)
         .toLowerCase()
-        .includes(k)
+        .includes(k),
     );
   }, [items, q]);
 
@@ -244,17 +232,12 @@ function ReviewCard({
   onEdit: () => void;
   onRemove: () => void;
 }) {
-  const preview = (item.highlights || item.next || item.lows).replace(
-    /[#*`>_~]/g,
-    ""
-  );
+  const preview = (item.highlights || item.next || item.lows).replace(/[#*`>_~]/g, "");
   return (
     <Card className="cursor-pointer transition active:scale-[0.99] hover:border-accent/40">
       <div onClick={onOpen}>
         <div className="flex items-center justify-between gap-3">
-          <p className="font-serif text-lg font-bold tracking-tight">
-            {item.month} 复盘
-          </p>
+          <p className="font-serif text-lg font-bold tracking-tight">{item.month} 复盘</p>
           <Stars value={item.rating} />
         </div>
         {preview && (
@@ -328,8 +311,7 @@ function ReviewDetail({
 
         <p className="text-xs text-text-2">
           创建：{fmtDateTime(item.createdAt)}
-          {item.updatedAt !== item.createdAt &&
-            ` · 更新：${fmtDateTime(item.updatedAt)}`}
+          {item.updatedAt !== item.createdAt && ` · 更新：${fmtDateTime(item.updatedAt)}`}
         </p>
 
         <AiPanel source={reviewSource(item)} />
@@ -347,13 +329,7 @@ function ReviewDetail({
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="mb-1 text-xs font-medium text-text-2">{title}</p>
@@ -397,7 +373,7 @@ function ReviewForm({
         rating,
         createdAt: edit?.createdAt || now,
         updatedAt: now,
-      })
+      }),
     );
   }
 
