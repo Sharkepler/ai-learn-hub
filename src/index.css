@@ -4,52 +4,54 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  智学 · 暖调编辑风格 redesign (taste-skill)
-  - 配色：暖纸底（cream/ivory）+ 单一陶土色（terracotta）强调，跨模块一致
-  - 字体：Geist（UI/正文拉丁）+ 系统中文黑体；标题与正文阅读用衬线（编辑/文学感）
-  - 形状：卡片 16px / 输入框 12px / 按钮与胶囊全圆（形状一致性锁）
-  - 质感：顶部极淡陶土色晕染，暖调描边与柔和暖色阴影（编辑杂志感）
+  智学 · 蓝绿商务风 (teal business style)
+  - 配色：白底 + 蓝绿(teal)主色，清爽专业
+  - 字体：Geist（UI/正文）+ 系统中文黑体；标题用衬线保持阅读质感
+  - 形状：卡片圆角 + 输入框圆角 + 胶囊按钮
+  - 质感：顶部蓝绿渐变晕染，浅灰分区，柔和阴影
 */
 @theme {
-  --font-sans: "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* 编辑风格衬线：Latin 用 Newsreader/Georgia，中文回退宋体/明朝体 */
-  --font-serif: "Newsreader", "Georgia", "Songti SC", "STSong", "SimSun",
-    "Noto Serif SC", "Noto Serif CJK SC", serif;
+  --font-sans:
+    "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* 衬线：Latin 用 Newsreader/Georgia，中文回退宋体 */
+  --font-serif:
+    "Newsreader", "Georgia", "Songti SC", "STSong", "SimSun", "Noto Serif SC",
+    "Noto Serif CJK SC", serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* 强调色：陶土 / 赤陶（warm terracotta），饱和度克制 */
-  --color-accent: #bc5236;
-  --color-accent-strong: #a5431f;
-  --color-accent-soft: rgba(188, 82, 54, 0.12);
-  /* 纸上使用的深色强调文字（保证对比度） */
-  --color-accent-ink: #9e3f20;
+  /* 强调色：蓝绿 / teal，专业清爽 */
+  --color-accent: #0d9488;
+  --color-accent-strong: #0f766e;
+  --color-accent-soft: rgba(13, 148, 136, 0.1);
+  /* 深色强调文字（保证对比度） */
+  --color-accent-ink: #0e7a6f;
 
-  /* 暖纸中性色（非纯白非纯黑） */
-  --color-bg: #fbf6ed;
-  --color-surface: #fffcf6;
-  --color-surface-2: #f3e9db;
-  --color-text: #2c2620;
-  --color-text-2: #7a6e60;
-  --color-border: #e7dccb;
+  /* 浅色中性色：白底 + 灰阶层次 */
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-text: #1e293b;
+  --color-text-2: #64748b;
+  --color-border: #e2e8f0;
 
   --radius-card: 16px;
   --radius-input: 12px;
 }
 
 .dark {
-  /* 暖夜：近黑暖棕，避免纯黑；陶土提亮以保对比 */
-  --color-accent: #d9815c;
-  --color-accent-strong: #c56a45;
-  --color-accent-soft: rgba(217, 129, 92, 0.16);
-  --color-accent-ink: #e7966e;
+  /* 暗夜：深蓝灰底，蓝绿提亮 */
+  --color-accent: #2dd4bf;
+  --color-accent-strong: #14b8a6;
+  --color-accent-soft: rgba(45, 212, 191, 0.14);
+  --color-accent-ink: #5eead4;
 
-  --color-bg: #1c1714;
-  --color-surface: #241e19;
-  --color-surface-2: #312a22;
-  --color-text: #f3ece1;
-  --color-text-2: #b3a392;
-  --color-border: #3a312a;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-2: #334155;
+  --color-text: #e2e8f0;
+  --color-text-2: #94a3b8;
+  --color-border: #334155;
 }
 
 @layer base {
@@ -69,7 +71,7 @@
     text-rendering: optimizeLegibility;
     min-height: 100dvh;
   }
-  /* 顶部极淡陶土色晕染，制造一点暖意与设计呼吸感（不参与交互） */
+  /* 顶部蓝绿渐变晕染，清爽呼吸感 */
   body::before {
     content: "";
     position: fixed;
@@ -78,12 +80,12 @@
     pointer-events: none;
     background: radial-gradient(
       60rem 32rem at 50% -12%,
-      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      color-mix(in srgb, var(--color-accent) 8%, transparent),
       transparent 70%
     );
   }
 
-  /* 编辑风格：标题用衬线，收紧字距，营造文学杂志感 */
+  /* 标题用衬线，保持阅读质感 */
   h1,
   h2,
   h3,
@@ -113,7 +115,7 @@
   }
 }
 
-/* 品牌标记：暖调编辑风刊头印记 —— 双环墨韵 + 陶土晕染 */
+/* 品牌标记：蓝绿商务风 —— 渐变圆标 */
 .brand-mark {
   position: relative;
   display: grid;
@@ -122,17 +124,17 @@
   height: 4.5rem;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse at 35% 30%, rgba(255,255,255,.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 35% 30%, rgba(255, 255, 255, 0.25) 0%, transparent 55%),
     linear-gradient(145deg, var(--color-accent), var(--color-accent-strong));
   color: #fff;
   font-family: var(--font-serif);
   font-weight: 700;
   font-size: 2rem;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   box-shadow:
-    0 0 0 1.5px rgba(188,82,54,.18),
-    0 16px 40px -10px rgba(188,82,54,.35),
-    inset 0 -3px 10px rgba(0,0,0,.12);
+    0 0 0 1.5px rgba(13, 148, 136, 0.18),
+    0 16px 40px -10px rgba(13, 148, 136, 0.28),
+    inset 0 -3px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* 外环装饰线 */
@@ -142,7 +144,7 @@
   inset: -6px;
   border-radius: 50%;
   border: 1px solid var(--color-accent);
-  opacity: .22;
+  opacity: 0.22;
 }
 
 /* 右上角小圆点（印章感） */
@@ -154,8 +156,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(255,255,255,.45);
-  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -168,7 +170,7 @@
   }
 }
 
-/* 灵感正文 Markdown 渲染样式（暖调编辑风，配合 .md 容器） */
+/* 灵感正文 Markdown 渲染样式（配合 .md 容器） */
 .md {
   color: var(--color-text);
   word-break: break-word;
@@ -222,7 +224,7 @@
 .md li {
   margin: 0.2em 0;
 }
-/* 重点高亮：引用块用陶土左边线 + 暖底 */
+/* 重点高亮：引用块用蓝绿左边线 + 浅底 */
 .md blockquote {
   margin: 0.6em 0;
   padding: 0.35em 0.85em;

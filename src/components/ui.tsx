@@ -25,7 +25,7 @@ export function Card({ className, children, ...rest }: HTMLAttributes<HTMLDivEle
   return (
     <div
       className={cn(
-        "rounded-[16px] bg-surface border border-border p-4 shadow-[0_1px_2px_rgba(44,38,32,0.06)]",
+        "rounded-[16px] bg-surface border border-border p-4 shadow-sm",
         className,
       )}
       {...rest}
@@ -52,7 +52,7 @@ export function Button({
   const styles: Record<string, string> = {
     primary: "bg-accent text-white hover:bg-accent-strong shadow-sm",
     ghost: "bg-transparent text-text border border-border hover:bg-surface-2",
-    subtle: "bg-surface-2 text-text hover:brightness-95 dark:hover:brightness-110",
+    subtle: "bg-surface-2 text-text hover:bg-border",
     danger: "bg-red-500 text-white hover:bg-red-600",
   };
   return (

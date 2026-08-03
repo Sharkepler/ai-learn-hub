@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CloudArrowUp } from "@phosphor-icons/react";
+import { CloudArrowUp, DownloadSimple, Warning } from "@phosphor-icons/react";
 import TopBar from "./TopBar";
 import BottomNav, { type View } from "./BottomNav";
 import Learning from "../views/Learning";
@@ -14,6 +14,12 @@ import { getToken } from "../lib/auth";
 import { getCfg, pullAll, pollAssets } from "../lib/sync";
 import type { GithubUser, Item } from "../lib/types";
 import { useToast } from "./Toast";
+
+function fmtDate() {
+  const d = new Date();
+  const w = ["日", "一", "二", "三", "四", "五", "六"];
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 周${w[d.getDay()]}`;
+}
 
 const TITLES: Record<View, string> = {
   learning: "学习追踪",
@@ -114,6 +120,46 @@ export default function AppShell({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 蓝绿渐变页头 */}
+      <header className="relative overflow-hidden rounded-b-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-500 px-5 pt-6 pb-5 text-white shadow-lg shadow-teal-500/20">
+        {/* 装饰性光点 */}
+        <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute bottom-0 left-8 h-16 w-16 rounded-full bg-white/10 blur-xl" />
+        <h1 className="text-xl font-bold tracking-tight">智学 · 个人学习与灵感空间</h1>
+        <p className="mt-1 text-sm text-white/75">{fmtDate()} · 数据仅存于本机</p>
+        {/* 操作按钮行 */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3.5 py-2 text-xs font-medium backdrop-blur-sm transition hover:bg-white/25 disabled:opacity-50"
+          >
+            <CloudArrowUp size={14} /> {syncing ? "同步中…" : "立即同步"}
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3.5 py-2 text-xs font-medium backdrop-blur-sm transition hover:bg-white/25"
+          >
+            {dark ? "☀️ 浅色" : "🌙 深色"}
+          </button>
+          <button
+            onClick={() => toast("导出功能开发中…", "ok")}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3.5 py-2 text-xs font-medium backdrop-blur-sm transition hover:bg-white/25"
+          >
+            <DownloadSimple size={14} /> 导出
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("确定要清空所有本地数据吗？此操作不可撤销。"))
+                toast("清空功能开发中…", "ok");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3.5 py-2 text-xs font-medium backdrop-blur-sm transition hover:bg-white/25 hover:text-red-100"
+          >
+            <Warning size={14} /> 清空
+          </button>
+        </div>
+      </header>
 
       <TopBar
         title={TITLES[view]}
