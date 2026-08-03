@@ -193,16 +193,12 @@ export default function AssetCalculator({ onClose }: { onClose: () => void }) {
   const activeCat = form.categoryId ? findCategory(form.categoryId) : undefined;
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-stretch justify-center bg-black/40 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <div className="flex flex-col">
       <motion.div
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-2xl flex-col bg-bg sm:max-h-[90vh] sm:rounded-[20px] sm:shadow-2xl"
+        className="mx-auto flex w-full max-w-2xl flex-col bg-bg sm:max-h-[90vh] sm:rounded-[20px] sm:shadow-2xl"
       >
         {/* header */}
         <div className="flex items-center gap-2 border-b border-border px-4 py-3.5">

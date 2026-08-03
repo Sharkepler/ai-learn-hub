@@ -102,7 +102,7 @@ export default function MediaLog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[75] flex flex-col bg-bg">
+    <div className="flex flex-col">
       {/* 顶部栏 */}
       <div className="sticky top-0 z-10 border-b border-border bg-bg/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">

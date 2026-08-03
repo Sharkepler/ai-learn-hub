@@ -1,13 +1,34 @@
-import { ListChecks, Lightbulb, ChartLineUp, Gear } from "@phosphor-icons/react";
+import {
+  Gauge,
+  ListChecks,
+  Lightbulb,
+  Calculator,
+  Books,
+  Smiley,
+  CalendarBlank,
+  Gear,
+} from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { cn } from "./ui";
 
-export type View = "learning" | "inspiration" | "dashboard" | "settings";
+export type View =
+  | "dashboard"
+  | "learning"
+  | "inspiration"
+  | "assets"
+  | "media"
+  | "mood"
+  | "review"
+  | "settings";
 
 const ITEMS: { key: View; label: string; icon: any }[] = [
+  { key: "dashboard", label: "总览", icon: Gauge },
   { key: "learning", label: "学习", icon: ListChecks },
   { key: "inspiration", label: "灵感", icon: Lightbulb },
-  { key: "dashboard", label: "看板", icon: ChartLineUp },
+  { key: "assets", label: "资产", icon: Calculator },
+  { key: "media", label: "书影", icon: Books },
+  { key: "mood", label: "心情", icon: Smiley },
+  { key: "review", label: "复盘", icon: CalendarBlank },
   { key: "settings", label: "设置", icon: Gear },
 ];
 
@@ -19,7 +40,7 @@ export default function BottomNav({
   onChange: (v: View) => void;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/85 backdrop-blur-xl">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/85 backdrop-blur-xl md:hidden">
       <div className="mx-auto flex max-w-2xl items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {ITEMS.map((it) => {
           const active = view === it.key;
